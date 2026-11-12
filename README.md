@@ -36,7 +36,7 @@ simply doesn't appear.
 On 1.8, FLAC files keep only the first value of a repeated tag (a second genre, say), so filters and Power
 Search on those fields see less. 1.9 keeps every value.
 
-Ready-made Docker images: `saysaar/musicip-1.96b-wine` (headless) and `saysaar/musicip-mixer-1.9` (Mixer).
+Ready-made Docker images: [`saysaar/musicip-1.9-headless`](https://hub.docker.com/r/saysaar/musicip-1.9-headless) (headless) and [`saysaar/musicip-1.9-gui`](https://hub.docker.com/r/saysaar/musicip-1.9-gui) (Mixer).
 
 ## Lyrion and apps
 
