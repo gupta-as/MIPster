@@ -13,7 +13,7 @@ Available features depend on the version and type of MusicIP server you run — 
 
        https://raw.githubusercontent.com/gupta-as/MIPster/main/repo.xml
 
-2. Save. **MIPster** appears in a group of its own. Tick it, save, and restart Lyrion.
+2. Click Apply. **MIPster** appears in a group of its own. Tick it, click Apply, and restart Lyrion.
 3. Open MIPster's settings and set the MusicIP host and port (default `localhost:10002`), and, if Lyrion and
    MusicIP see your music under different paths, the two path settings (for example `/music` in Lyrion and
    `Z:\music` in MusicIP).
@@ -40,7 +40,7 @@ Ready-made Docker images: [`saysaar/musicip-1.9-headless`](https://hub.docker.co
 
 ## Lyrion and apps
 
-the plugin has only been tested with recent Lyrion versions but is likely to work with older versions. All functionality is available on Classic and Material interfaces and Lyrplay. iPeng allows full control but lacks the ability to perform a new power search within the app.
+The plugin has only been tested with recent Lyrion versions but is likely to work with older versions. All functionality is available in the Classic and Material interfaces and in Lyrplay. iPeng allows full control but lacks the ability to perform a new Power Search within the app.
 
 ## What it does
 
@@ -52,10 +52,7 @@ since the last export can be skipped too (each is a setting). A player with the 
 **Batches.** A one-off list of MusicIP tracks added to the queue: from a song or an album (song and album
 menus), or from a mood.
 
-**MIP Controls** — one page per player (Classic home page; Extras in Material): chain on/off, the current
-and next track, filter, recipe, Start New Chain, Change Next, mood and Play Mood batch, Auto Sleep, and the
-mix settings (size, style, variety, reject size), with **Copy to Selected Players**. The same controls are in
-the player menu on iPeng and the hardware players.
+**MIP Controls** are in Extras, one page per player.  The same controls (except for Power Search) are also available in iPeng settings and player menu on hardware players. Chains and mood batches are played and controlled from here. Song or Album based batches are started from the song/album context menu.
 
 **MIP Live View** — the playing track and the next one, with their Lyrion statistics.
 
