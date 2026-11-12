@@ -1,0 +1,365 @@
+PLUGIN_MIPSTER
+	EN	MIPster
+PLUGIN_MIPSTER_DESCINSTALL
+	EN	MusicIP interface that exports Lyrion/APC play history and ratings to MusicIP and integrates MusicIP created chains or batches utilizing filters, recipes, moods and power searches from within Lyrion. Available features depend on version and type of MusicIP server employed.
+PLUGIN_MIPSTER_WEB_MAIN_HOST
+	EN	MusicIP Host Location
+PLUGIN_MIPSTER_WEB_MAIN_HOSTDESC
+	EN	Use IP address or localhost
+PLUGIN_MIPSTER_UPNEXT
+	EN	Next Track
+PLUGIN_MIPSTER_MAIN_PORT
+	EN	MusicIP Port
+PLUGIN_MIPSTER_MAIN_PORTDESC
+	EN	MusicIP Port (Default 10002)
+PLUGIN_MIPSTER_SLEEP_OFF
+	EN	Disable Auto Sleep
+PLUGIN_MIPSTER_INJECTOR_ON
+	EN	Enable Chain
+PLUGIN_INJECTORON_MENU_ENABLE
+	EN	MIP Chain Enabled
+PLUGIN_INJECTOROFF_MENU_DISABLED
+	EN	MIP Chain Disabled
+PLUGIN_MIPSTER_MENU_SLEEP_DISABLED
+	EN	Auto Sleep Disabled
+PLUGIN_MIPSTER_MENU_SLEEP_ENABLE
+	EN	Auto Sleep Enabled
+PLUGIN_MIPSTER_JIVE_STATUS
+	EN	Chain
+PLUGIN_MIPSTER_JIVE_SLEEP
+	EN	Auto Sleep
+PLUGIN_MIPSTER_JIVE_MIXSTYLE
+	EN	Style
+PLUGIN_MIPSTER_JIVE_VARIETY
+	EN	Variety
+PLUGIN_MIPSTER_JIVE_SIZE
+	EN	MIP Ask Size
+PLUGIN_MIPSTER_JIVE_FILTER
+	EN	Filter
+PLUGIN_MIPSTER_JIVE_RECIPE
+	EN	Recipe
+PLUGIN_MIPSTER_JIVE_SPACING
+	EN	Reject Size
+PLUGIN_MIPSTER_TRACK
+	EN	Use MIPster
+PLUGIN_MIPSTER_KICKOFF
+	EN	Start New Chain
+PLUGIN_MIPSTER_START
+	EN	Starting MIP Chain
+PLUGIN_MIPSTER_WEB_MAIN_DELAY
+	EN	Pause before Next Fetch
+PLUGIN_MIPSTER_WEB_MAIN_DELAYDESC
+	EN	MIPster request can fail without the Now Playing list getting updated. A minimum of 1 second is set. If queuing is erratic or slow, try increasing it
+PLUGIN_MIPSTER_WEB_FILTER
+	EN	Filter
+PLUGIN_MIPSTER_WEB_RECIPE
+	EN	Recipe
+PLUGIN_MIPSTER_BATCH_SONG
+	EN	Play MIP Song Batch
+PLUGIN_MIPSTER_BATCH_ALBUM
+	EN	Play MIP Album Batch
+PLUGIN_MIPSTER_BATCH_STARTING
+	EN	Building MIP Batch
+PLUGIN_MIPSTER_BATCH_ADDING
+	EN	Adding MIP Batch
+PLUGIN_MIPSTER_BATCH_ADD
+	EN	Add
+PLUGIN_MIPSTER_BATCH_FAILED
+	EN	No MIPster Batch was built - check the server log
+PLUGIN_MIPSTER_POPUP_NOMIP
+	EN	Cannot reach MusicIP
+PLUGIN_MIPSTER_POPUP_NOTRACKS
+	EN	MusicIP returned nothing
+PLUGIN_MIPSTER_POPUP_BREACHED
+	EN	MIPster block
+PLUGIN_MIPSTER_POPUP_REPLACINGTRACK
+	EN	Replacing Track
+PLUGIN_MIPSTER_WEB_TSBLOCKPLAYCOUNT
+	EN	Playcount x and Above
+PLUGIN_MIPSTER_WEB_TSBLOCKPLAYCOUNTDESC
+	EN	0=disabled. Stop tracks played many times.
+PLUGIN_MIPSTER_WEB_TSREMOVERATING
+	EN	Rating x and Below
+PLUGIN_MIPSTER_WEB_TSREMOVERATINGDESC
+	EN	0=disabled. MIPster uses the LMS scale of 100 where 20=* and 100=*****. Unrated tracks are not blocked.
+PLUGIN_MIPSTER_WEB_TSBLOCKDAYS
+	EN	Played/Skipped in x Days
+PLUGIN_MIPSTER_WEB_TSBLOCKDAYSDESC
+	EN	0=disabled. Blocks both plays and skips for the set number of days.
+PLUGIN_MIPSTER_WEB_VOLUMEAMOUNT
+	EN	Volume Drop per Track
+PLUGIN_MIPSTER_WEB_VOLUMEAMOUNTDESC
+	EN	0=disabled.
+PLUGIN_MIPSTER_SLEEP_TIMEFROM
+	EN	From (HRS)
+PLUGIN_MIPSTER_SLEEP_TIMETO
+	EN	To (HRS)
+PLUGIN_MIPSTER_WEB_SLEEPDURATION
+	EN	After (Mins)
+PLUGIN_MIPSTER_WEB_SLEEPDURATIONDESC
+	EN	Play time before powering off.
+PLUGIN_MIPSTER_WEB_SLEEP
+	EN	Enable Auto Sleep
+PLUGIN_MIPSTER_WEB_STYLE
+	EN	Style
+PLUGIN_MIPSTER_WEB_VARIETY
+	EN	Variety
+PLUGIN_MIPSTER_WEB_SIZE
+	EN	MIP Ask Size
+PLUGIN_MIPSTER_WEB_REJECTSIZE
+	EN	Reject Size
+PLUGIN_MIPSTER_WEB_SEEDMOOD
+	EN	Mood
+PLUGIN_MIPSTER_LIVEVIEW
+	EN	MIP Live View
+PLUGIN_MIPSTER_LV_USEASNEXT
+	EN	Use as Next Track
+PLUGIN_MIPSTER_LV_REPLACING
+	EN	Replacing...
+PLUGIN_MIPSTER_LV_NEVERPLAYED
+	EN	Never Played
+PLUGIN_MIPSTER_LV_NOTRATED
+	EN	Not Rated
+PLUGIN_MIPSTER_LV_DROP_LASTPLAYED
+	EN	Recency block
+PLUGIN_MIPSTER_LV_DROP_QUEUE
+	EN	Queue block
+PLUGIN_MIPSTER_LV_DROP_SINCEEXPORT
+	EN	Played, awaiting export
+PLUGIN_MIPSTER_LV_DROP_PLAYCOUNT
+	EN	Playcount block
+PLUGIN_MIPSTER_LV_DROP_RATING
+	EN	Rating block
+PLUGIN_MIPSTER_LV_DROP_SEED
+	EN	Seed
+PLUGIN_MIPSTER_LV_DROP_OTHER
+	EN	Dropped
+PLUGIN_MIPSTER_LV_NOTRACK
+	EN	No track on this row
+PLUGIN_MIPSTER_LV_NOTINLIBRARY
+	EN	Track no longer in the library - rebuild the list
+PLUGIN_MIPSTER_LV_TOOMANY
+	EN	More than one track queued - nothing replaced
+PLUGIN_MIPSTERQP
+	EN	MIP Start New Chain
+PLUGIN_MIPSTERQS
+	EN	MIP Controls
+PLUGIN_MIPSTER_WEB_QS_MOODPLAY
+	EN	Play Mood Batch
+PLUGIN_MIPSTER_WEB_QS_MOODNOTE
+	EN	Mood batches are based on moods saved in MusicIP which have no relation to current track. At the end of a batch, the player will switch to Chain mode, if switched on.
+PLUGIN_MIPSTER_WEB_QS_NOTHINGPLAYING
+	EN	Empty queue
+PLUGIN_MIPSTER_WEB_QS_REPLACEQUEUE
+	EN	Start New Chain
+PLUGIN_MIPSTER_WEB_DSTMCLASH
+	EN	While the Chain is on, Don't Stop The Music leaves this player alone.
+PLUGIN_MIPSTER_WEB_QS_STATUS
+	EN	Chain (automatic queuing)
+PLUGIN_MIPSTER_WEB_QS_APPLY
+	EN	Apply
+PLUGIN_MIPSTER_PLAYING
+	EN	Current Track
+PLUGIN_MIPSTER_WEB_SYNCWARNING
+	EN	#### Warning %s is a slave in sync group, make changes at %s ####
+PLUGIN_MIPSTER_WEB_TIMEOUT
+	EN	SQLite Timeout
+PLUGIN_MIPSTER_WEB_TIMEOUTDESC
+	EN	Seconds. A low powered device like a NAS with sluggish Lyrion database responses may require increasing MIPster waiting time to avoid glitches. Takes effect at the next fetch.
+PLUGIN_MIPSTER_WEB_LOCALMEDIAPATH
+	EN	Music Path in LMS
+PLUGIN_MIPSTER_WEB_LOCALMEDIAPATHDESC
+	EN	Only needed if Lyrion uses more than one music folder
+PLUGIN_MIPSTER_WEB_NASCONVERTPATH
+	EN	Music Path in MusicIP
+PLUGIN_MIPSTER_WEB_NASCONVERTPATHDESC
+	EN	Empty means music path is the same as Lyrion's. A different path here e.g. Z:\music will dynamically convert file paths between the two both ways
+
+
+PLUGIN_MIPSTER_EXPORT_TIME
+	EN	Optional Daily Export Time
+PLUGIN_MIPSTER_EXPORT_TIMEDESC
+	EN	Set HH:MM for a scheduled daily export. Empty means no scheduled daily export. The export happens when Lyrion is idle, not exactly on set time. Also skipped if another export already completed that day
+PLUGIN_MIPSTER_EXPORT_POSTSCAN
+	EN	Post-scan automatic export
+PLUGIN_MIPSTER_EXPORT_POSTSCANDESC
+	EN	Automatic exports can follow every library scan. This is independent of any scheduled export above. If you use daily scans, use this. If not, schedule the optional export above.  A successful post-scan export will suppress scheduled daily exports rest of the day
+PLUGIN_MIPSTER_SUBPAGE
+	EN	Settings Section
+PLUGIN_MIPSTER_SUBPAGEDESC
+	EN	Select a settings section
+PLUGIN_MIPSTER_SUBPAGE_MAIN
+	EN	Main
+PLUGIN_MIPSTER_EXPORT_BANDS_RESTORE
+	EN	Restore Defaults
+PLUGIN_MIPSTER_EXPORT_BANDS_REFUSED
+	EN	Rejected non-ascending settings.  Nothing changed
+PLUGIN_MIPSTER_EXPORT_UNRATED
+	EN	Unrated Tracks Export As
+PLUGIN_MIPSTER_EXPORT_UNRATEDDESC
+	EN	MIPster does not export any rating for unrated tracks, on the set default of 0 here. If you intentionally want to give unrated tracks a rating value in MusicIP, set a non-zero number here. Export time will increase proportionate to the number of unrated tracks.
+PLUGIN_MIPSTER_EXPORT_BAND1
+	EN	MIP 1 Starts at LMS Rating
+PLUGIN_MIPSTER_EXPORT_BAND1DESC
+	EN	Lyrion rating threshold for sending MusicIP  track rating of 1 star. Tracks below this become Unrated in MusicIP.
+PLUGIN_MIPSTER_EXPORT_BAND2
+	EN	MIP 2 Starts at
+PLUGIN_MIPSTER_EXPORT_BAND3
+	EN	MIP 3 Starts at
+PLUGIN_MIPSTER_EXPORT_BAND4
+	EN	MIP 4 Starts at
+PLUGIN_MIPSTER_EXPORT_BAND5
+	EN	MIP 5 Starts at
+PLUGIN_MIPSTER_EXPORT_BANDDESC
+	EN	Set sequentially higher thresholds for each MusicIP star rating. A non-ascending set of settings will be rejected
+PLUGIN_MIPSTER_EXPORT_NOW
+	EN	Manual Export
+PLUGIN_MIPSTER_EXPORT_NOWDESC
+	EN	Immediately export play statistics and ratings to MusicIP cache
+PLUGIN_MIPSTER_EXPORT_NOW_BUTTON
+	EN	Export Now
+PLUGIN_MIPSTER_EXPORT_ABORT_BUTTON
+	EN	Abort Export
+PLUGIN_MIPSTER_EXPORT_STATUS_RUNNING
+	EN	Exporting
+PLUGIN_MIPSTER_EXPORT_LAST_DONE
+	EN	Last export completed %s
+PLUGIN_MIPSTER_EXPORT_LAST_ERRORS
+	EN	Last export finished with %s errors %s
+PLUGIN_MIPSTER_EXPORT_LAST_ABORTED
+	EN	Last export aborted %s
+PLUGIN_MIPSTER_EXPORT_LAST_FAILED
+	EN	Last export failed - MusicIP saved nothing %s
+PLUGIN_MIPSTER_SUBPAGE_EXPORTS
+	EN	Exports
+PLUGIN_MIPSTER_BLOCK_SECTION
+	EN	Block Following Tracks
+PLUGIN_MIPSTER_BLOCK_SINCEEXPORT
+	EN	Block Tracks Played Since Export
+PLUGIN_MIPSTER_BLOCK_SINCEEXPORTDESC
+	EN	MusicIP has no play history since last export. Block tracks here while MIP history is stale.
+PLUGIN_MIPSTER_BLOCK_DO
+	EN	Block
+PLUGIN_MIPSTER_BLOCK_DONT
+	EN	Don't
+PLUGIN_MIPSTER_SLEEP_SECTION
+	EN	Auto Sleep Settings
+PLUGIN_MIPSTER_SLEEP_SECTIONSUB
+	EN	Per player On/Off in MIP Controls
+PLUGIN_MIPSTER_WEB_MAIN_FOOTER
+	EN	MIP mix parameters are set per player on MIP Controls page on homepage (Classic) or under Extras (Material). Also enjoy MIP Live View added to same pages while listening.
+PLUGIN_MIPSTER_EXPORT_CAUTION
+	EN	Caution: MusicIP does not read ratings from tags. MIPster exports rounded off Lyrion ratings which are on a scale of 0-100 (1 star=20) to MusicIP which is on a scale of 1-5. Option to change that scaling on this page is for niche use only. Restoring defaults and re-exporting should restore normal matching.
+PLUGIN_MIPSTER_EXPORT_RESTORE
+	EN	Restore Defaults
+PLUGIN_MIPSTER_EXPORT_RESTOREDESC
+	EN	Puts the six rows above back to the scale MIPster ships with - unrated 0, then 10, 30, 50, 70 and 90. Nothing else on this page is saved by this button. Re-export afterwards to write the restored scale into MusicIP.
+PLUGIN_MIPSTER_EXPORT_BANDSRESTORED
+	EN	Rating bands restored to the default scale
+PLUGIN_MIPSTER_TB_PREV
+	EN	Previous
+PLUGIN_MIPSTER_TB_PLAY
+	EN	Play / Pause
+PLUGIN_MIPSTER_TB_NEXT
+	EN	Next
+PLUGIN_MIPSTER_WEB_QS_MIXSETTINGS
+	EN	Mix Settings
+PLUGIN_MIPSTER_WEB_QS_COPYALL
+	EN	Copy to Selected Players
+PLUGIN_MIPSTER_WEB_QS_COPYALLNOTE
+	EN	Copies Filter, Recipe, Size, Style, Variety, Reject Size and Chain on/off to the players ticked above. A saved Power Search travels with the Filter if that is what is selected. Not Mood, not Auto Sleep. The other players use them from their next track.
+PLUGIN_MIPSTER_WEB_QS_COPIED
+	EN	Mix settings copied to %s other player(s).
+PLUGIN_MIPSTER_WEB_QS_COPIEDNONE
+	EN	No players ticked.
+PLUGIN_MIPSTER_WEB_QS_SLEEPNOTE
+	EN	The hours, the length and the volume drop are on the Main settings page and apply to every player.
+PLUGIN_MIPSTER_PS_TITLE
+	EN	MIP Power Search
+PLUGIN_MIPSTER_PS_BUTTON
+	EN	MIP Power Search
+PLUGIN_MIPSTER_PS_DROPDOWN
+	EN	Power Search
+PLUGIN_MIPSTER_PS_NOHOST
+	EN	No MusicIP host found
+PLUGIN_MIPSTER_PS_HEADLESS
+	EN	Power search failed. Requires desktop style host
+PLUGIN_MIPSTER_PS_HELP
+	EN	Text fields are case insensitive and match part of a word, so beat will find the Beatles and any artist with the word Beats. MIP replaces empty genre fields with "Miscellaneous" and empty Artist fields with "Various Artists". If these are in your actual tags, they will count towards a "missing" field. Use a separate parameter set connected by an "and" when just an All or Any in one set is insufficient to capture your exact need.
+PLUGIN_MIPSTER_PS_MATCH
+	EN	Match
+PLUGIN_MIPSTER_PS_MATCHAND
+	EN	and match
+PLUGIN_MIPSTER_PS_OFFOLLOWING
+	EN	of the following
+PLUGIN_MIPSTER_PS_ALL
+	EN	all
+PLUGIN_MIPSTER_PS_ANY
+	EN	any
+PLUGIN_MIPSTER_PS_ADDROW
+	EN	Add Condition
+PLUGIN_MIPSTER_PS_ADDSET
+	EN	More Params
+PLUGIN_MIPSTER_PS_MIN
+	EN	Min
+PLUGIN_MIPSTER_PS_MINHELP
+	EN	A low yield search is worthless for a mix. Set a minimum for yourself. A search yielding less than the set minimum will be rejected. Everything above 500 is accepted.
+PLUGIN_MIPSTER_PS_SAVE
+	EN	Save Search
+PLUGIN_MIPSTER_PS_RESET
+	EN	Reset
+PLUGIN_MIPSTER_PS_SAVED
+	EN	Search saved
+PLUGIN_MIPSTER_PS_SHORT
+	EN	Leaves less than %s - found %s
+PLUGIN_MIPSTER_PS_NOMATCH
+	EN	Leaves nothing at all
+PLUGIN_MIPSTER_PS_NOANSWER
+	EN	MusicIP did not answer
+PLUGIN_MIPSTER_PS_EMPTY
+	EN	Nothing to search for - fill in a condition
+PLUGIN_MIPSTER_PS_BADCHAR
+	EN	MusicIP cannot accept %s in a power search.
+PLUGIN_MIPSTER_PS_OP_CONTAINS
+	EN	contains
+PLUGIN_MIPSTER_PS_OP_OMITS
+	EN	omits
+PLUGIN_MIPSTER_PS_OP_MISSING
+	EN	missing
+PLUGIN_MIPSTER_PS_OP_RANGE
+	EN	range
+PLUGIN_MIPSTER_PS_F_ALBUM
+	EN	Album
+PLUGIN_MIPSTER_PS_F_ARTIST
+	EN	Artist
+PLUGIN_MIPSTER_PS_F_COMPOSER
+	EN	Composer
+PLUGIN_MIPSTER_PS_F_CONDUCTOR
+	EN	Conductor
+PLUGIN_MIPSTER_PS_F_FILE
+	EN	File
+PLUGIN_MIPSTER_PS_F_GENRE
+	EN	Genre
+PLUGIN_MIPSTER_PS_F_ORCHESTRA
+	EN	Orchestra/Band
+PLUGIN_MIPSTER_PS_F_BITRATE
+	EN	Bitrate
+PLUGIN_MIPSTER_PS_F_ADDED
+	EN	Added
+PLUGIN_MIPSTER_PS_F_LASTPLAY
+	EN	Last Play
+PLUGIN_MIPSTER_PS_F_PLAYCOUNT
+	EN	Play Count
+PLUGIN_MIPSTER_PS_F_RATING
+	EN	Rating in *s
+PLUGIN_MIPSTER_PS_F_YEAR
+	EN	Year YYYY
+PLUGIN_MIPSTER_PS_BUTTONHELP
+	EN	Build and save search on next page. It will add itself as a choice in Filter Menu above. A new save overwrites previous. Frequently needed filters should be saved in the host
+PLUGIN_MIPSTER_WEB_QS_CHANGENEXT
+	EN	Change Next
+
+PLUGIN_MIPSTER_WEB_QS_CHANGENEXTHELP
+	EN	The next track changes by itself when you change Filter or Recipe. Use this when you have changed something else, or just want a different one.
+PLUGIN_MIPSTER_PS_REMOVE
+	EN	Remove

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<extensions>
+	<details>
+		<title lang="EN">MIPster</title>
+	</details>
+	<plugins>
+		<plugin name="MIPster" version="1.0.0" minTarget="7.9" maxTarget="*">
+			<title lang="EN">MIPster</title>
+			<desc lang="EN">MusicIP interface that exports Lyrion/APC play history and ratings to MusicIP and integrates MusicIP created chains or batches utilizing filters, recipes, moods and power searches from within Lyrion. Available features depend on version and type of MusicIP server employed.</desc>
+			<changes lang="EN">1.0.0 - first public release.</changes>
+			<creator>guptaas</creator>
+			<category>playlists</category>
+			<link>https://github.com/gupta-as/MIPster</link>
+			<icon>https://raw.githubusercontent.com/gupta-as/MIPster/main/MIPster/HTML/EN/plugins/MIPster/HTML/images/mipster.png</icon>
+			<url>https://github.com/gupta-as/MIPster/releases/download/1.0.0/MIPster-1.0.0.zip</url>
+			<sha>51ab2004e6b8b17bcc6379b8277c8da487d3ddcb</sha>
+		</plugin>
+	</plugins>
+</extensions>

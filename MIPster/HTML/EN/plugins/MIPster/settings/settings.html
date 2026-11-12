@@ -1,0 +1,87 @@
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/MIPster/settings/subpage_chooser.html %]
+
+[%# Every row uses the setting wrapper, not settingGroup, matching the wrapper Alternative Play    %]
+[%# Count and Lyrion's own pages use. That is what puts the description behind the help icon       %]
+[%# instead of printing it on the page - a click on the question mark in Material, a hover on the  %]
+[%# exclamation mark in Classic. Do not reintroduce settingGroup here.                             %]
+[%#                                                                                                %]
+[%# EVERYTHING ON THIS PAGE IS SERVER-WIDE. The blocks and the sleep times were per player in       %]
+[%# MIPFlow; they are one set now. Only the Auto Sleep on/off switch stayed with the player, on     %]
+[%# MIP Controls, which is what the subheading below says.                                        %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_MAIN_HOST" desc="PLUGIN_MIPSTER_WEB_MAIN_HOSTDESC" %]
+	<input type="text" class="stdedit" name="mipHost" id="mipHost" value="[% prefs.mipHost %]" size="15" />
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_MAIN_PORT" desc="PLUGIN_MIPSTER_MAIN_PORTDESC" %]
+	<input type="text" class="stdedit" name="mipPort" id="mipPort" value="[% prefs.mipPort %]" size="5" />
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_LOCALMEDIAPATH" desc="PLUGIN_MIPSTER_WEB_LOCALMEDIAPATHDESC" %]
+	<input type="text" class="stdedit" name="localmediapath" id="localmediapath" value="[% prefs.localmediapath %]" size="30">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_NASCONVERTPATH" desc="PLUGIN_MIPSTER_WEB_NASCONVERTPATHDESC" %]
+	<input type="text" class="stdedit" name="nasconvertpath" id="nasconvertpath" value="[% prefs.nasconvertpath %]" size="30">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TIMEOUT" desc="PLUGIN_MIPSTER_WEB_TIMEOUTDESC" %]
+	<input type="text" class="stdedit sliderInput_30_120_5" name="sqlitetimeout" id="sqlitetimeout" value="[% prefs.sqlitetimeout %]" size="2">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_MAIN_DELAY" desc="PLUGIN_MIPSTER_WEB_MAIN_DELAYDESC" %]
+	<input type="text" class="stdedit sliderInput_1_30_1" name="mipDelay" id="mipDelay" value="[% prefs.mipDelay %]" size="1">
+[% END %]
+
+<hr>
+
+[%# THE BLOCKS. Each one labels a candidate once and the first label wins, so the drop reason Live   %]
+[%# View shows is the true one. Zero disables the three numeric ones.                                %]
+<div><b>[% "PLUGIN_MIPSTER_BLOCK_SECTION" | string %]</b></div>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_BLOCK_SINCEEXPORT" desc="PLUGIN_MIPSTER_BLOCK_SINCEEXPORTDESC" %]
+	<select class="stdedit" name="blockSinceExport" id="blockSinceExport">
+		<option [% IF prefs.blockSinceExport %]selected [% END %]value="1">[% "PLUGIN_MIPSTER_BLOCK_DO" | string %]</option>
+		<option [% IF NOT prefs.blockSinceExport %]selected [% END %]value="0">[% "PLUGIN_MIPSTER_BLOCK_DONT" | string %]</option>
+	</select>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TSBLOCKPLAYCOUNT" desc="PLUGIN_MIPSTER_WEB_TSBLOCKPLAYCOUNTDESC" %]
+	<input type="text" class="stdedit sliderInput_0_30_1" name="blockPlaycount" id="blockPlaycount" value="[% prefs.blockPlaycount %]" size="1">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TSREMOVERATING" desc="PLUGIN_MIPSTER_WEB_TSREMOVERATINGDESC" %]
+	<input type="text" class="stdedit sliderInput_0_90_1" name="blockRating" id="blockRating" value="[% prefs.blockRating %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TSBLOCKDAYS" desc="PLUGIN_MIPSTER_WEB_TSBLOCKDAYSDESC" %]
+	<input type="text" class="stdedit sliderInput_0_180_1" name="blockLastplayed" id="blockLastplayed" value="[% prefs.blockLastplayed %]" size="3">
+[% END %]
+
+<hr>
+
+<div><b>[% "PLUGIN_MIPSTER_SLEEP_SECTION" | string %]</b></div>
+<div style="font-size:0.85em; opacity:0.7; padding:2px 0 10px 0;">[% "PLUGIN_MIPSTER_SLEEP_SECTIONSUB" | string %]</div>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_SLEEP_TIMEFROM" desc="" %]
+	<input type="text" class="stdedit sliderInput_12_23_1" name="sleepFrom" id="sleepFrom" value="[% prefs.sleepFrom %]" size="1">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_SLEEP_TIMETO" desc="" %]
+	<input type="text" class="stdedit sliderInput_0_11_1" name="sleepTo" id="sleepTo" value="[% prefs.sleepTo %]" size="1">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_SLEEPDURATION" desc="PLUGIN_MIPSTER_WEB_SLEEPDURATIONDESC" %]
+	<input type="text" class="stdedit sliderInput_1_240_1" name="sleepDuration" id="sleepDuration" value="[% prefs.sleepDuration %]" size="2">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_VOLUMEAMOUNT" desc="PLUGIN_MIPSTER_WEB_VOLUMEAMOUNTDESC" %]
+	<input type="text" class="stdedit sliderInput_0_10_1" name="sleepVolumeDrop" id="sleepVolumeDrop" value="[% prefs.sleepVolumeDrop %]" size="1">
+[% END %]
+
+<br><b>[% "PLUGIN_MIPSTER_WEB_MAIN_FOOTER" | string %]</b>
+<br>
+
+[% PROCESS settings/footer.html %]

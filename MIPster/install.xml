@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<extension>
+	<id>ff7cc10b-ee48-43c5-80b9-54e0d6b55376</id>
+	<name>PLUGIN_MIPSTER</name>
+	<module>Plugins::MIPster::Plugin</module>
+	<version>1.0.0</version>
+	<description>PLUGIN_MIPSTER_DESCINSTALL</description>
+	<creator>guptaas</creator>
+	<icon>plugins/MIPster/HTML/images/mipster.png</icon>
+	<homepageURL>https://github.com/gupta-as/MIPster</homepageURL>
+	<optionsURL>plugins/MIPster/settings/settings.html</optionsURL>
+	<defaultState>enabled</defaultState>
+	<canConflictWithDSTM>1</canConflictWithDSTM>
+	<targetApplication>
+		<id>Lyrion Music Server</id>
+		<maxVersion>*</maxVersion>
+		<minVersion>7.9</minVersion>
+	</targetApplication>
+</extension>

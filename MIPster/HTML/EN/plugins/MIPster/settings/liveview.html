@@ -1,0 +1,201 @@
+[%- IF !ajaxUpdate %]
+[% pagetitle = 'PLUGIN_MIPSTER_LIVEVIEW' | string; pageicon = 'PLUGIN_MIPSTER_LIVEVIEW' %]
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %][% path %]?player=[% player | uri %][% statisticparameters %]">
+		[% "PLUGIN_MIPSTER_LIVEVIEW" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+[% END -%]
+[% PROCESS pageheader.html %]
+[% PROCESS plugins/MIPster/HTML/css/mipster.css %]
+
+[%# THIS PAGE MUST NEVER NAVIGATE.                                                                  %]
+[%# It used to rewrite its own address every refreshRate seconds (30 on this server) with           %]
+[%# location.replace. In Material, Live View is a fullscreen dialog, and rewriting the address is   %]
+[%# navigation - so Material closed the dialog and threw you back to the home page. Material was    %]
+[%# behaving correctly; the page was navigating. location.replace also destroyed the back history.  %]
+[%#                                                                                                 %]
+[%# Now the CONTENTS are replaced instead. We ask the server for this same page with ajaxUpdate=1,  %]
+[%# which the guards at the top and bottom of this file already answer by leaving out the page      %]
+[%# furniture, and drop the reply into the div below. Nothing navigates, so Material has nothing to %]
+[%# react to, and the scroll position survives - which a full reload destroyed.                     %]
+[%#                                                                                                 %]
+[%# The row links are plain onclick attributes, so they still work after the swap.                  %]
+[%# The script sits OUTSIDE the swapped div on purpose: a script placed by an innerHTML assignment  %]
+[%# is never executed, so it must not be part of what gets replaced.                                %]
+	<SCRIPT>
+	var scLvUrl = "[% webroot %][% path %]?player=[% player | uri %][% statisticparameters %]";
+
+	function scLvRefresh() {
+		var r = new XMLHttpRequest();
+		r.open('GET', scLvUrl + '&ajaxUpdate=1', true);
+		r.onloadend = function () {
+			var b = document.getElementById('sclvbody');
+			if (r.status == 200 && b) { b.innerHTML = r.responseText; }
+		};
+		r.send();
+	}
+[% refresh = refresh || 0 %]
+[% IF refresh > 0 %]
+	setInterval(scLvRefresh, [% refresh %] * [% refreshRate %]);
+[% END %]
+[%# The player bar is at the foot of this file, outside the part a refresh replaces.           %]
+	</SCRIPT>
+<div id="sclvbody">
+[% END %]
+	<table class='topside'>
+	<thead>
+	<tr><th><strong>[% "PLUGIN_MIPSTER_LIVEVIEW" | string %]</strong></th></tr>
+	</thead>
+	<tbody>
+	<tr><td>[% master %]</td></tr>
+	<tr><td>[% mixstatus %]</td></tr>
+	</tbody>
+	</table>
+	[% IF track != '' %]
+	<hr>
+	<table class='midside'>
+	<tr>
+	[%# Album art follows Material exactly: ask for 300x300_f, which Material already                %]
+	[%# requests for its own grids and lists, and simply draw it at 100. Lyrion stores each resized   %]
+	[%# cover under its exact size AND mode letter, so asking for anything else made a picture used   %]
+	[%# by this page alone. The old per-user size slider went with this change.                       %]
+	[% IF showstats == 'ON' %]
+	<td rowspan=8><img width="100" height="100" src="[% webroot %]music/[% currentalbumart %]/cover_300x300_f.jpg"></td>
+	[% ELSE %]
+	<td rowspan=5><img width="100" height="100" src="[% webroot %]music/[% currentalbumart %]/cover_300x300_f.jpg"></td>
+	[% END %]
+
+	[%# The two panel headings are string keys, not literal text. They were the last                 %]
+	[%# literals in this template, and the SC Controls page draws the SAME two headings from these   %]
+	[%# same keys - so the wording now lives in one place and the two pages cannot drift apart.      %]
+	<td><div class='heads'>[% "PLUGIN_MIPSTER_PLAYING" | string %]</div></td>
+	[% IF showstats == 'ON' %]
+	<td rowspan=8><img width="100" height="100" src="[% webroot %]music/[% comingupnextalbumart %]/cover_300x300_f.jpg"></td>
+	[% ELSE %]
+	<td rowspan=5><img width="100" height="100" src="[% webroot %]music/[% comingupnextalbumart %]/cover_300x300_f.jpg"></td>
+	[% END %]
+	<td><div class='heads'>[% "PLUGIN_MIPSTER_UPNEXT" | string %]</div></td>
+	</tr>
+	[%# Row order is the user's own and is identical here and in the candidate list below:            %]
+	[%# descriptor, Title, Artist, Year - Album, Genre, Rating, Playcount, Last Played.               %]
+	[%# The album value already carries the year, joined in Breakout, so nothing here has to know.    %]
+	<tr><td>[% currenttrack %]</td><td>[% comingupnexttrack %]</td></tr>
+	<tr><td>[% currentartist %]</td><td>[% comingupnextartist %]</td></tr>
+	<tr><td>[% currentalbum %]</td><td>[% comingupnextalbum %]</td></tr>
+	<tr><td>Genre: [% currentgenre %]</td><td>Genre: [% comingupnextgenre %]</td></tr>
+	[% IF showstats == 'ON' %]
+	<tr><td>Rating: [% currentrat %]</td><td>Rating: [% comingupnextrat %]</td></tr>
+	<tr><td>Playcount: [% currentpc %]</td><td>Playcount: [% comingupnextpc %]</td></tr>
+	<tr><td>Last Played: [% currentlp %]</td><td>Last Played: [% comingupnextlp %]</td></tr>
+	[% END %]
+	</table>
+	[% END %]
+	<hr>
+
+[%# ⛔ THE CANDIDATE TABLE IS NEVER GATED - NOT ON A MESSAGE, AND NOT ON THE TRACK. It was once drawn only when mixstatus was  %]
+[%# empty, so any warning above blanked it - a chain with nineteen survivors showed nothing at all  %]
+[%# underneath a complaint. The rows ARE the evidence, and they are most useful precisely when      %]
+[%# something is being complained about. A message says what happened; the table says what MusicIP  %]
+[%# offered and what survived. Those are different questions and one must not silence the other.    %]
+[%# The same applies to the playing track. The gate above draws the two panels only when Lyrion can %]
+[%# describe the track, which is right for a panel with nothing to say - but the table sat inside   %]
+[%# it until Edit 116, so a broken track hid the rows as well. A broken track is exactly when they  %]
+[%# are wanted. The gate now closes above this line.                                                %]
+	<div class="filler1"></div>
+	[% WRAPPER settingGroup title= mode %][% END %]
+	<div class="filler2"></div>
+	<table class='bottomside'>
+[%# The candidate rows are handed over as values, like everything else on this page, and drawn    %]
+[%# here. Row order is the user's own and is identical to the two panels above:                    %]
+[%# descriptor, Title, Artist, Year - Album, Genre, Rating, Playcount, Last Played.                %]
+[%# Album art is the same 300x300_f drawn at 100 that the panels use; the sizes come with the row. %]
+[%# link is the Use as Next Track anchor. It is built in Breakout because it is a script, not a    %]
+[%# value, and a translated apostrophe has to be escaped before it goes into one.                  %]
+	[% FOREACH row IN filters %]
+	<tr><td rowspan=9 class=pic><img width=[% row.iconsize %] height=[% row.iconsize %] src=/music/[% row.cover %]/cover_[% row.artsize %].jpg></td><td>[% row.link %]</td></tr>
+	<tr><td class=txt>[% row.descriptor %]</td></tr>
+	<tr><td style="vertical-align:middle">[% row.title %]</td></tr>
+	<tr><td style="vertical-align:middle">[% row.artist %]</td></tr>
+	<tr><td style="vertical-align:middle">[% row.album %]</td></tr>
+	<tr><td style="vertical-align:middle">Genre: [% row.genre %]</td></tr>
+	<tr><td style="vertical-align:middle">Rating: [% row.rating %]</td></tr>
+	<tr><td style="vertical-align:middle">Playcount: [% row.playcount %]</td></tr>
+	<tr><td style="vertical-align:middle">Last Played: [% row.lastplayed %]</td></tr>
+	<tr><td colspan=2 class=end>&nbsp;</td></tr><tr><td colspan=2>&nbsp;</td></tr>
+	[% END %]
+	</table>
+
+[%- IF !ajaxUpdate %]
+</div>
+[%# PLAYER BAR - Previous, Play/Pause, Next and a progress line, fixed to the foot of the page. Copied %]
+[%# from HB64's build on purpose: it draws in Material's own colours (--text-color, --background-color), %]
+[%# which is what the 0.6.1 ruling against hand-styled controls was missing. The same block is in     %]
+[%# quicksettings.html and liveview.html - duplicated, not included, so one bad include cannot take   %]
+[%# both pages down. It sits outside anything a page rebuilds, so a refresh never touches it.         %]
+<style>
+	#mipTransport { position:fixed; left:0; right:0; bottom:0; z-index:1000; box-sizing:border-box; padding:0 8px; display:flex; flex-direction:column; background:var(--background-color, #303030); border-top:1px solid var(--list-item-border-color, rgba(128,128,128,0.3)); }
+	#mipTbTimes { display:flex; align-items:center; gap:10px; height:24px; padding:0 12px; font-size:0.75em; opacity:0.8; color:var(--text-color, #eee); }
+	#mipTbTrack { flex:1; height:4px; border-radius:2px; overflow:hidden; background:rgba(128,128,128,0.3); }
+	#mipTbFill { height:100%; width:0%; background:var(--text-color, #eee); transition:width 0.9s linear; }
+	.mipTbRow { display:flex; align-items:center; justify-content:center; gap:40px; height:64px; }
+	.mipTbBtn { background:transparent !important; color:var(--text-color, #eee) !important; border:none !important; box-shadow:none !important; cursor:pointer !important; padding:0 !important; margin:0 4px !important; display:flex !important; align-items:center !important; justify-content:center !important; opacity:0.85 !important; }
+	.mipTbBtn:hover { opacity:1 !important; }
+	.mipTbPlay { background:var(--text-color, #eee) !important; border-radius:50% !important; width:44px !important; height:44px !important; opacity:1 !important; }
+	#mipTbSpacer { height:100px; }
+</style>
+<div id="mipTbSpacer"></div>
+<div id="mipTransport">
+	<div id="mipTbTimes"><span id="mipTbElapsed">0:00</span><div id="mipTbTrack"><div id="mipTbFill"></div></div><span id="mipTbDur"></span></div>
+	<div class="mipTbRow">
+		<button type="button" class="mipTbBtn" onclick="mipTbCmd(['playlist','index','-1'])" title="[% "PLUGIN_MIPSTER_TB_PREV" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_PREV" | string %]"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+		<button type="button" class="mipTbBtn mipTbPlay" onclick="mipTbCmd(['pause'])" title="[% "PLUGIN_MIPSTER_TB_PLAY" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_PLAY" | string %]">
+			<svg id="mipTbIconPlay" width="26" height="26" viewBox="0 0 24 24" fill="var(--background-color, #303030)"><path d="M8 5v14l11-7z"/></svg>
+			<svg id="mipTbIconPause" width="26" height="26" viewBox="0 0 24 24" fill="var(--background-color, #303030)" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+		</button>
+		<button type="button" class="mipTbBtn" onclick="mipTbCmd(['playlist','index','+1'])" title="[% "PLUGIN_MIPSTER_TB_NEXT" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_NEXT" | string %]"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+	</div>
+</div>
+<script type="text/javascript">
+	var mipTbPlayer = "[% player %]";
+	var mipTb = { t: 0, d: 0, playing: false, at: 0 };
+	function mipTbRpc(cmd, done) {
+		var r = new XMLHttpRequest();
+		r.open('POST', '/jsonrpc.js', true);
+		r.setRequestHeader('Content-Type', 'application/json');
+		r.onloadend = function () { if (done) { done(r.responseText); } };
+		r.send(JSON.stringify({ id: 1, method: 'slim.request', params: [mipTbPlayer, cmd] }));
+	}
+	function mipTbFmt(x) { x = Math.max(0, Math.round(x)); return Math.floor(x / 60) + ':' + ((x % 60) < 10 ? '0' : '') + (x % 60); }
+	function mipTbRender() {
+		var el = mipTb.t + (mipTb.playing ? (Date.now() - mipTb.at) / 1000 : 0);
+		if (mipTb.d > 0 && el > mipTb.d) { el = mipTb.d; }
+		document.getElementById('mipTbElapsed').textContent = mipTbFmt(el);
+		document.getElementById('mipTbDur').textContent = mipTb.d > 0 ? mipTbFmt(mipTb.d) : '';
+		document.getElementById('mipTbFill').style.width = (mipTb.d > 0 ? Math.min(100, el * 100 / mipTb.d) : 0) + '%';
+		document.getElementById('mipTbIconPlay').style.display = mipTb.playing ? 'none' : '';
+		document.getElementById('mipTbIconPause').style.display = mipTb.playing ? '' : 'none';
+	}
+	function mipTbPoll() {
+		mipTbRpc(['status', '-', '1', 'tags:'], function (text) {
+			try {
+				var r = (JSON.parse(text) || {}).result || {};
+				mipTb.t = parseFloat(r.time) || 0; mipTb.d = parseFloat(r.duration) || 0;
+				mipTb.playing = (r.mode === 'play'); mipTb.at = Date.now();
+				mipTbRender();
+			} catch (e) {}
+		});
+	}
+	function mipTbCmd(cmd) {
+		mipTbRpc(cmd, function () {
+			mipTbPoll();
+			if (typeof scLvRefresh === 'function') { scLvRefresh(); }
+		});
+	}
+	mipTbPoll();
+	setInterval(mipTbRender, 500);
+	setInterval(mipTbPoll, 5000);
+</script>
+[% PROCESS pagefooter.html %]
+[% END %]

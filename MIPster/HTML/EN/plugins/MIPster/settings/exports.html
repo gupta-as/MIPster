@@ -1,0 +1,144 @@
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/MIPster/settings/subpage_chooser.html %]
+
+<style>.scexportbtn{margin-top:-1px;padding:3px}.scexportbtn2{margin-left:14px}:root{--sc-statcolor:red;--sc-statblank:rgba(0,0,0,0)}.scstatus{color:var(--sc-statcolor) !important;font-size:120%;font-weight:bold;margin:0 0 12px 0}.scsuccess{color:green !important}.scexporting:after{font-size:180%;content:' .';animation:scdots 1.8s steps(5,end) infinite}@keyframes scdots{0%,20%{color:var(--sc-statblank);text-shadow:.25em 0 0 var(--sc-statblank),.5em 0 0 var(--sc-statblank)}40%{color:var(--sc-statcolor);text-shadow:.25em 0 0 var(--sc-statblank),.5em 0 0 var(--sc-statblank)}60%{text-shadow:.25em 0 0 var(--sc-statcolor),.5em 0 0 var(--sc-statblank)}80%,100%{text-shadow:.25em 0 0 var(--sc-statcolor),.5em 0 0 var(--sc-statcolor)}}</style>
+
+[%# THE EXPORT STATUS LINE. Above every setting, deliberately.                                     %]
+[%# RED IS THE DEFAULT AND GREEN IS ONLY FOR SUCCESS. Red therefore covers running, aborted and     %]
+[%# finished-with-errors, and that is the point: red means MusicIP's data is not to be trusted      %]
+[%# right now, which is true while an export is writing to it and true after one that failed.       %]
+[%# The outcome lives in the exportResult and exportLastMessage prefs, set when an export ends and  %]
+[%# never cleared, so the line shows the LAST export's result and end time whenever the page is      %]
+[%# opened, across restarts, until the next export ends.                                             %]
+<p id="scexportmsg" class="scstatus"></p>
+
+[% IF scbandserror %]
+<p class="scstatus">[% "PLUGIN_MIPSTER_EXPORT_BANDS_REFUSED" | string %]</p>
+[% END %]
+[% IF scbandsrestored %]
+<p class="scstatus scsuccess">[% "PLUGIN_MIPSTER_EXPORT_BANDSRESTORED" | string %]</p>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_NOW" desc="PLUGIN_MIPSTER_EXPORT_NOWDESC" %]
+	<input class="scexportbtn stdclick" id="scexportnow" name="scexportnow" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_NOW_BUTTON" | string %]"[% IF scactivemipexport or scactivelmsscan %] disabled[% END %]><input class="scexportbtn scexportbtn2 stdclick" id="scexportabort" name="scexportabort" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_ABORT_BUTTON" | string %]"[% IF scactivelmsscan %] disabled[% END %]>
+[% END %]
+
+[%# TWO AUTOMATIC CONTROLS, NOT FOUR. A master switch and a separate Export Every Night switch were %]
+[%# built and dropped the same day. A BLANK TIME IS THE OFF SWITCH for the daily export, and        %]
+[%# post-scan answers for itself. Do not add a switch back.                                         %]
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_TIME" desc="PLUGIN_MIPSTER_EXPORT_TIMEDESC" %]
+	<input type="text" class="stdedit" name="exportTime" id="exportTime" value="[% prefs.exportTime %]" size="5">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_POSTSCAN" desc="PLUGIN_MIPSTER_EXPORT_POSTSCANDESC" %]
+	<select class="stdedit" name="exportPostscan" id="exportPostscan">
+		<option [% IF NOT prefs.exportPostscan %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.exportPostscan %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+
+<hr>
+
+[%# THE CAUTION. Printed on the page rather than hidden behind a help icon: it is the reason the six %]
+[%# rows below are almost never the right thing to touch.                                            %]
+<div style="padding:4px 0 12px 0;">[% "PLUGIN_MIPSTER_EXPORT_CAUTION" | string %]</div>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_UNRATED" desc="PLUGIN_MIPSTER_EXPORT_UNRATEDDESC" %]
+	<select class="stdedit" name="exportUnrated" id="exportUnrated">
+		[% FOREACH n = [0,1,2,3,4,5] %]
+		<option [% IF prefs.exportUnrated == n %]selected [% END %]value="[% n %]">[% n %]</option>
+		[%- END -%]
+	</select>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND1" desc="PLUGIN_MIPSTER_EXPORT_BAND1DESC" %]
+	<input type="text" class="stdedit" name="exportBand1" id="exportBand1" value="[% prefs.exportBand1 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND2" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand2" id="exportBand2" value="[% prefs.exportBand2 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND3" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand3" id="exportBand3" value="[% prefs.exportBand3 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND4" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand4" id="exportBand4" value="[% prefs.exportBand4 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND5" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand5" id="exportBand5" value="[% prefs.exportBand5 %]" size="3">
+[% END %]
+
+[%# RESTORE DEFAULTS does not go through the validator - the stock scale is valid by definition, and %]
+[%# needing a valid page to get back to a valid page would be a trap.                                %]
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_RESTORE" desc="PLUGIN_MIPSTER_EXPORT_RESTOREDESC" %]
+	<input class="scexportbtn stdclick" id="screstorebands" name="screstorebands" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_BANDS_RESTORE" | string %]">
+[% END %]
+
+[% PROCESS settings/footer.html %]
+
+[%# THE EXPORT STATUS POLLER. It asks LMS for two prefs over JSON-RPC and writes what it finds into  %]
+[%# the status line at the top of the page. Nothing here drives the export.                          %]
+[%#                                                                                                  %]
+[%# IT STOPS POLLING THE MOMENT THE EXPORT ENDS. That is what makes the outcome persist - nothing is %]
+[%# left running that could overwrite it - and it is why opening this page days later still shows    %]
+[%# how the last export finished. If the fetch fails it clears the line and stops rather than        %]
+[%# leaving a stale "Exporting" on screen for ever.                                                  %]
+<script type="text/javascript">
+(function () {
+	var scExportPoll;
+	var scJsonUrl = "[% squeezebox_server_jsondatareq %]";
+
+	function scSetMsg(text, cls) {
+		var el = document.getElementById('scexportmsg');
+		if (!el) return;
+		el.innerHTML = text;
+		el.className = 'scstatus' + (cls ? ' ' + cls : '');
+	}
+
+	function scGetPref(prefName, done) {
+		fetch(scJsonUrl, {
+			method: "post",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ id: 1, method: 'slim.request',
+				params: ['', ['pref', 'plugin.mipster:' + prefName, '?']] })
+		}).then(function (r) {
+			if (!r.ok) throw new Error('HTTP ' + r.status);
+			return r.json();
+		}).then(function (data) {
+			done(Object.values(data.result)[0]);
+		}).catch(function () {
+			scSetMsg('', '');
+			clearInterval(scExportPoll);
+		});
+	}
+
+	function scPoll() {
+		scGetPref('exportInprogress', function (v) {
+			var btn = document.getElementById('scexportnow');
+			if (v == 1) {
+				if (btn) btn.disabled = true;
+				scSetMsg('[% "PLUGIN_MIPSTER_EXPORT_STATUS_RUNNING" | string %]', 'scexporting');
+				return;
+			}
+			if (btn) btn.disabled = false;
+			clearInterval(scExportPoll);
+			// The line is written by the plugin when the export ends, with the count and the time, and
+			// kept until the next one ends. exportResult only picks the colour: green for 1, red otherwise.
+			scGetPref('exportResult', function (r) {
+				scGetPref('exportLastMessage', function (m) {
+					scSetMsg(m || '', r == 1 ? 'scsuccess' : '');
+				});
+			});
+		});
+	}
+
+	window.addEventListener("load", function () {
+		scPoll();
+		scExportPoll = setInterval(scPoll, 10000);
+	});
+})();
+</script>

@@ -1,0 +1,543 @@
+[% pagetitle = 'PLUGIN_MIPSTERQS' | string; pageicon = 'PLUGIN_MIPSTERQS' %]
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %][% path %]?player=[% player | uri %][% statisticparameters %]">
+		[% "PLUGIN_MIPSTERQS" | string %]
+	</a>
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+
+[% END -%]
+[% PROCESS pageheader.html %]
+
+<script type="text/javascript">
+	// Auto-close after 60s, MATERIAL ONLY.
+	//
+	// In Material this page is a fullscreen v-dialog (lms-iframe-dialog) covering the whole
+	// UI, so a page left open blocks everything behind it - hence the auto-close. In Classic
+	// there is no dialog, and the version of this we inherited fell through to navigating to
+	// the web root, throwing you off the page while you were still reading it. So: if the
+	// dialog's Back button is not there, do nothing at all. Never navigate.
+	//
+	// Checked against the Material source (lms-material-master, iframe-dialog.js:723): the
+	// toolbar is #iframe-toolbar and its Back button is the v-btn holding the "arrow_back"
+	// icon. Match on the icon, not on button position - the older btns[1] trick counts from
+	// the left, and a Home button sits at that index whenever showHome is on, so it could
+	// send you home instead of back.
+	//
+	// Note this is a fixed countdown from page load, not an idle timer. Only a reload resets
+	// it, and only changing a control reloads. 60s is there so it cannot fire while you are
+	// still reading the page and deciding.
+	function scQsGoBack() {
+		try {
+			var icons = window.parent.document.querySelectorAll('#iframe-toolbar button i.v-icon');
+			for (var i = 0; i < icons.length; i++) {
+				if (icons[i].textContent.trim() === 'arrow_back') {
+					var btn = icons[i].parentNode;
+					while (btn && btn.tagName !== 'BUTTON') { btn = btn.parentNode; }
+					if (btn) { btn.click(); return; }
+				}
+			}
+		} catch (e) {}
+		// Not Material - leave the page alone.
+	}
+	/* scQsGoBack is not called. It is kept because it is the only code that knows how to find
+	   Material's own back arrow. */
+
+	/* HELP BUBBLES. Standing explanatory text under a control is read once and then read past for
+	   ever, while still costing its lines on every visit - so it hides behind a mark and the page
+	   stays short. Same mark and same behaviour as MIP Power Search. */
+	/* ============================================================================================
+	   THE INFO POPOVER. Taken from HB64's SugarCube, 2026-09-13 build, and the reasons are his:
+	   a floating panel over the page, not text that expands inline and shoves everything below it
+	   down the screen. One open at a time. A tap anywhere else closes it. And it measures its own
+	   position on opening: left-aligned normally, flipped to right-aligned when left-aligned would
+	   run off the edge of the screen - measured live rather than guessed, so it keeps working
+	   wherever the mark happens to sit.
+
+	   ⛔ HIS OWN TRAP, RECORDED SO IT IS NOT REDISCOVERED: a page that rebuilds itself on a timer
+	   wipes an open popover, because the freshly drawn one starts closed. Neither of these two
+	   pages does that. MIP Live View DOES, so if a popover is ever added there, the refresh must
+	   skip a rebuild while one is open.
+
+	   This block is duplicated in quicksettings.html and powersearch.html rather than shared
+	   through an include: a failed include path would take both pages down at once, and these are
+	   static. If you change one, change the other.
+	   ============================================================================================ */
+	function mipmInfo(el) {
+		var pop = el.nextElementSibling;
+		var wasOpen = (pop.style.display === 'block');
+
+		document.querySelectorAll('.mipm-pop').forEach(function(p) { p.style.display = 'none'; });
+		if (wasOpen) { return; }
+
+		pop.style.left = '0';
+		pop.style.right = 'auto';
+		pop.style.display = 'block';
+
+		/* CLAMPED TO THE SCREEN, not flipped. HB64 flips a left-anchored panel to right-anchored
+		   when it would overrun the right edge, which is right when the mark sits at the left
+		   margin. Ours sit mid-row - beside Min, beside a button - and there the flip only trades
+		   one overrun for the other: measured, a 320px panel right-anchored to a mark at x=180 on a
+		   500px screen started at -140. So measure the overhang and shift by exactly that, then
+		   check the other edge. Works wherever the mark happens to be. */
+		var box = pop.getBoundingClientRect();
+		var vw = document.documentElement.clientWidth;
+		var shift = 0;
+		if (box.right > vw - 8) { shift = (vw - 8) - box.right; }
+		if (box.left + shift < 8) { shift = 8 - box.left; }
+		if (shift) { pop.style.left = Math.round(shift) + 'px'; }
+	}
+
+	document.addEventListener('click', function(e) {
+		if (e.target.closest && e.target.closest('.mipm-info')) { return; }
+		document.querySelectorAll('.mipm-pop').forEach(function(p) { p.style.display = 'none'; });
+	});
+</script>
+
+<style>
+	.mipm-info { position:relative; display:inline-block; }
+	.mipm-mark { cursor:pointer; opacity:0.7; font-size:1.15em; line-height:1; text-decoration:none; }
+	.mipm-mark:hover { opacity:1; }
+	.mipm-pop {
+		display:none; position:absolute; z-index:1000; top:100%; left:0; margin-top:6px;
+		width:320px; max-width:78vw; background:#2b2b2b; color:#fff; text-align:left;
+		border-radius:8px; padding:14px; box-shadow:0 4px 16px rgba(0,0,0,0.5);
+		font-size:0.85em; line-height:1.45; font-weight:normal;
+	}
+</style>
+
+<div style="padding:15px;">
+
+	<!-- SC STATUS. Deliberately the first thing on the page: a working console must not be offered
+	     for a player the Chain is switched off for. Two signals rather than one - the lamp for a
+	     glance, the word in red for anyone who does not read the colour.
+	     Its own small form on purpose. The main form below never sends chainStatus, and this
+	     one never sends the others, so neither can clobber the other - the handler skips any pref
+	     that is not present in the request. -->
+	[% sc_on = prefs.chainStatus %]
+	[% IF sc_on %][% sc_lamp = '#3fb950' %][% ELSE %][% sc_lamp = '#f04747' %][% END %]
+	<form method="get" action="[% webroot %][% path %]">
+		<input type="hidden" name="player" value="[% player %]">
+		<input type="hidden" name="mixopen" value="[% mixopen %]">
+		<div style="display:flex; align-items:center; gap:10px; padding:0 0 18px 0;">
+			<span style="width:12px; height:12px; border-radius:50%; display:inline-block; flex:none; background:[% sc_lamp %]; box-shadow:0 0 6px [% sc_lamp %];"></span>
+			<label class="stdlabel" for="chainStatus" style="margin:0;[% IF !sc_on %] color:#f04747; font-weight:bold;[% END %]">[% "PLUGIN_MIPSTER_WEB_QS_STATUS" | string %]</label>
+			<select class="stdedit" name="chainStatus" id="chainStatus" onchange="this.form.submit()" style="[% IF !sc_on %]color:#f04747; font-weight:bold;[% END %]">
+				<option [% IF !sc_on %]selected [% END %]value="0">[% 'Disabled' | getstring %]</option>
+				<option [% IF sc_on %]selected [% END %]value="1">[% 'Enabled' | getstring %]</option>
+			</select>
+		</div>
+		<div style="font-size:0.85em; opacity:0.7; padding:0 0 18px 0; margin-top:-12px;">[% "PLUGIN_MIPSTER_WEB_DSTMCLASH" | string %]</div>
+	</form>
+
+	<!-- THE THREE LATE MESSAGES ARE GONE - Saved, Replacing/Starting, and mood batch fired. The page
+	     is only drawn after the MusicIP fetch has finished, so every one of them announced something
+	     that had already happened and was already audible. The Current and Next panels below update
+	     themselves over the live connection and say it honestly. Do not put them back.
+	     Copy to All Players keeps its line: its count of players written appears nowhere else. -->
+	[% IF copiedmsg %]
+	<div style="padding:0 0 4px 0; font-weight:bold;">[% copiedmsg %]</div>
+	[% END %]
+
+	<div id="sc-qs-empty-wrap" style="display:none; padding:0 0 20px 0;">
+		<div style="font-weight:bold; padding:0 0 10px 0;">[% "PLUGIN_MIPSTER_WEB_QS_NOTHINGPLAYING" | string %]</div>
+	</div>
+
+	<div id="sc-qs-cur-wrap" style="display:none; align-items:center; gap:14px; padding:0 0 12px 0;">
+		<img id="sc-qs-cur-art" src="" style="width:56px; height:56px; border-radius:6px; object-fit:cover; background:#222;" alt="">
+		<div>
+			<div style="opacity:0.6; font-size:0.8em;">[% "PLUGIN_MIPSTER_PLAYING" | string %]</div>
+			<div id="sc-qs-cur-title" style="font-weight:bold;"></div>
+			<div id="sc-qs-cur-artist" style="opacity:0.75; font-size:0.9em;"></div>
+		</div>
+	</div>
+
+	<div id="sc-qs-next-wrap" style="display:none; align-items:center; gap:14px; padding:0 0 12px 0;">
+		<img id="sc-qs-next-art" src="" style="width:56px; height:56px; border-radius:6px; object-fit:cover; background:#222;" alt="">
+		<div>
+			<div style="opacity:0.6; font-size:0.8em;">[% "PLUGIN_MIPSTER_UPNEXT" | string %]</div>
+			<div id="sc-qs-next-title" style="font-weight:bold;"></div>
+			<div id="sc-qs-next-artist" style="opacity:0.75; font-size:0.9em;"></div>
+		</div>
+	</div>
+
+
+	<script type="text/javascript">
+		(function() {
+			var scPlayerId = "[% player %]";
+
+			/* ============================================================================
+			   HOW THIS PAGE KEEPS ITSELF CURRENT.
+
+			   It SUBSCRIBES, the way Material does. The page tells Lyrion "tell me when this
+			   player changes" and then stays quiet until Lyrion pushes an update. Nothing is
+			   asked while nothing is happening, so a page left open on a sleeping player
+			   costs nothing at all, and an update appears the moment it happens rather than
+			   whenever a timer next fires.
+
+
+			   ⛔ THERE IS DELIBERATELY NO POLLING FALLBACK. Material does not carry one either,
+			   and a fallback here would only be insurance against an untested implementation,
+			   which is what testing is for. On any failure this does what Lyrion's own advice
+			   says to do - start again with a fresh handshake.
+
+			   THE FIRST CONNECT AND THE SUBSCRIBE TRAVEL IN ONE REQUEST, CONNECT FIRST. Lyrion
+			   attaches the current status to a /slim/subscribe reply only when THAT REQUEST has
+			   already been marked long-polling, and the mark is set per request by /meta/connect.
+			   Two separate requests can never satisfy it, however they are ordered - tried and
+			   proved on the server. In one request the connect sets the mark, the subscribe then
+			   sees it, and Lyrion answers at once instead of holding the line. Subscribing on its
+			   own leaves the panels empty until the next 30-second heartbeat.
+			   ============================================================================ */
+
+			var scClid = null;      /* our id, once Lyrion has given us one */
+			var scRetry = 2000;     /* backs off to a minute if the server is not there */
+
+			function scFillSlot(prefix, t) {
+				var artEl = document.getElementById(prefix + '-art');
+				var titleEl = document.getElementById(prefix + '-title');
+				var artistEl = document.getElementById(prefix + '-artist');
+				if (t.title) { titleEl.textContent = t.title; }
+				if (t.artist) { artistEl.textContent = t.artist; }
+				if (t.artwork_url) {
+					artEl.src = t.artwork_url;
+				} else if (t.coverid) {
+					artEl.src = "/music/" + t.coverid + "/cover_100x100.jpg";
+				}
+			}
+
+			/* The one place that draws the two panels. */
+			function scRender(loop) {
+				try {
+					if (loop && loop.length) {
+						document.getElementById('sc-qs-empty-wrap').style.display = 'none';
+						scFillSlot('sc-qs-cur', loop[0]);
+						document.getElementById('sc-qs-cur-wrap').style.display = 'flex';
+						if (loop.length > 1) {
+							scFillSlot('sc-qs-next', loop[1]);
+							document.getElementById('sc-qs-next-wrap').style.display = 'flex';
+						} else {
+							document.getElementById('sc-qs-next-wrap').style.display = 'none';
+						}
+					} else {
+						document.getElementById('sc-qs-empty-wrap').style.display = 'block';
+						document.getElementById('sc-qs-cur-wrap').style.display = 'none';
+						document.getElementById('sc-qs-next-wrap').style.display = 'none';
+					}
+				} catch (e) {}
+			}
+
+			/* Start over. Lyrion's own advice on a lost or invalid connection is 'handshake'. */
+			function scRestart() {
+				scClid = null;
+				setTimeout(scHandshake, scRetry);
+				scRetry = Math.min(scRetry * 2, 60000);
+			}
+
+			/* Every reply is scanned for player data, whichever message carried it - in practice
+			   /meta/connect carries them all, the first one included. */
+			function scPost(body, onok) {
+				try {
+					var xhr = new XMLHttpRequest();
+					xhr.open('POST', '/cometd', true);
+					xhr.setRequestHeader('Content-Type', 'application/json');
+					xhr.onload = function() {
+						var res;
+						try { res = JSON.parse(xhr.responseText); } catch (e) { scRestart(); return; }
+						if (res && res.length) {
+							for (var i = 0; i < res.length; i++) {
+								if (res[i].data && res[i].data.playlist_loop) {
+									scRetry = 2000;
+									scRender(res[i].data.playlist_loop);
+								}
+							}
+						}
+						onok(res);
+					};
+					xhr.onerror = function() { scRestart(); };
+					xhr.send(JSON.stringify(body));
+				} catch (e) { scRestart(); }
+			}
+
+			function scHandshake() {
+				scPost([{
+					channel: '/meta/handshake',
+					version: '1.0',
+					supportedConnectionTypes: ['long-polling']
+				}], function(res) {
+					var m = res && res[0];
+					if (!m || !m.successful || !m.clientId) { scRestart(); return; }
+					scClid = m.clientId;
+					scOpen();
+				});
+			}
+
+			/* The opening move: one request carrying the connect and the subscription together,
+			   connect first. The response channel must carry our own id - that is how Lyrion
+			   routes it back. subscribe:30 means "push when it changes, and at least every 30
+			   seconds". After this reply the ordinary connect loop takes over. */
+			function scOpen() {
+				scPost([{
+					channel: '/meta/connect',
+					clientId: scClid,
+					connectionType: 'long-polling'
+				}, {
+					channel: '/slim/subscribe',
+					id: 1,
+					clientId: scClid,
+					data: {
+						response: '/' + scClid + '/slim/playerstatus',
+						request: [scPlayerId, ['status', '-', 2, 'tags:acdlKN', 'subscribe:30']]
+					}
+				}], function(res) { scArm(res); });
+			}
+
+			/* One place decides whether the line is still good: re-arm, or start over. */
+			function scArm(res) {
+				var ok = false;
+				if (res && res.length) {
+					for (var i = 0; i < res.length; i++) {
+						if (res[i].channel === '/meta/connect') { ok = res[i].successful; }
+					}
+				}
+				if (ok) { scConnect(); } else { scRestart(); }
+			}
+
+			function scConnect() {
+				scPost([{
+					channel: '/meta/connect',
+					clientId: scClid,
+					connectionType: 'long-polling'
+				}], function(res) { scArm(res); });
+			}
+
+			scHandshake();
+		})();
+	</script>
+
+	<!-- The || fallbacks on the sliders below carry the SAME numbers %clientDefaults holds
+	     (size 20, style 20, variety 0, reject size 0). Without them an unset pref renders
+	     value="" and a range input then shows the MIDDLE of its own range - so the page claimed
+	     style 100 while MusicIP was being sent 0. Keep the two sets of numbers matched. -->
+	<form method="get" action="[% webroot %][% path %]">
+		<input type="hidden" name="player" value="[% player %]">
+
+		<div style="padding:10px 0;">
+			<label class="stdlabel" for="chainFilter">[% "PLUGIN_MIPSTER_WEB_FILTER" | string %]</label><br>
+			<select class="stdedit" name="chainFilter" id="chainFilter" onchange="this.form.submit()">
+			[%# A LIST, not a hash. Template Toolkit will not read a hash key that starts with an
+			    underscore, and '(Power Search)' is stored as __MIPSTER_PS__ - looking it up in a hash
+			    draws a blank line. The handler also decides the order here, on the text shown. %]
+			[% FOREACH entry IN filterlist %]
+				<option [% IF prefs.chainFilter == entry.key %]selected [% END %]value="[% entry.key %]">[% entry.label %]</option>
+			[%- END -%]
+			</select>
+		</div>
+
+		<div style="padding:10px 0;">
+			<label class="stdlabel" for="chainRecipe">[% "PLUGIN_MIPSTER_WEB_RECIPE" | string %]</label><br>
+			<select class="stdedit" name="chainRecipe" id="chainRecipe" onchange="this.form.submit()">
+			[% FOREACH option IN receipes.keys.sort %]
+				<option [% IF prefs.chainRecipe == option %]selected [% END %]value="[% option %]">[% receipes.$option %]</option>
+			[%- END -%]
+			</select>
+		</div>
+
+		<!-- Start New Chain. Always visible - this is the whole reason the separate Extras entry could go.
+		     forcestart clears the queue and starts a fresh mix from a random track inside the current
+		     filter. One action, one name, and the same name on all three surfaces.
+
+		     GREYED WHEN SUGARCUBE IS OFF, and this is the only one of the four that is. Replace Next
+		     and the two Mood batches are finite - they do a thing once and stop, which is a coherent
+		     request on a disabled player. Start New Chain starts a CONTINUOUS mix, and commandCallback
+		     refuses to sustain it while chainStatus is 0, so it filled the queue once and then
+		     died with nothing on screen saying why. The handler enforces the same rule, so a typed
+		     url cannot get round the greyed button. -->
+		<!-- CHANGE NEXT is NOT greyed when the Chain is off, and Start New Chain is. The difference is
+		     that Change Next does one thing once - drop the queued next track and fetch another - which
+		     is a coherent request on a disabled player. It exists because saving a Power Search does not
+		     trigger the auto-replace: that fires on a change of Filter, Recipe or Reject Size, and
+		     editing the search behind an already-selected (Power Search) changes none of them. -->
+		<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:0 0 20px 0;">
+			<button type="button" [% IF !sc_on %]disabled [% END %]onclick="window.location.href='[% webroot %][% path %]?player=[% player | uri %]&amp;forcestart=1'" style="padding:8px 16px; cursor:[% IF sc_on %]pointer[% ELSE %]not-allowed[% END %];[% IF !sc_on %] opacity:0.45;[% END %]">[% "PLUGIN_MIPSTER_WEB_QS_REPLACEQUEUE" | string %]</button>
+			<button type="button" onclick="window.location.href='[% webroot %][% path %]?player=[% player | uri %]&amp;changenext=1'" style="padding:8px 16px; cursor:pointer;">[% "PLUGIN_MIPSTER_WEB_QS_CHANGENEXT" | string %]</button>
+			<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_WEB_QS_CHANGENEXTHELP" | string %]</div></span>
+		</div>
+
+		<!-- Mood, and the only way to fire a mood batch. A song or an album batch is fired by
+		     right-clicking the thing itself; a mood has nothing to right-click, so it needs a
+		     button. -->
+		[% IF moods.keys.size %]
+		<div style="padding:10px 0;">
+			<label class="stdlabel" for="mood">[% "PLUGIN_MIPSTER_WEB_SEEDMOOD" | string %]</label><br>
+			<select class="stdedit" name="mood" id="mood" onchange="this.form.submit()">
+			[% FOREACH option IN moods.keys.sort %]
+				<option [% IF prefs.mood == option %]selected [% END %]value="[% option %]">[% moods.$option %]</option>
+			[%- END -%]
+			</select>
+			<div style="display:flex; align-items:center; gap:8px; padding:8px 0 0 0;">
+				<button type="button" onclick="window.location.href='[% webroot %][% path %]?player=[% player | uri %]&amp;moodbatch=play'" style="padding:8px 16px; cursor:pointer;">[% "PLUGIN_MIPSTER_WEB_QS_MOODPLAY" | string %]</button>
+				<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_WEB_QS_MOODNOTE" | string %]</div></span>
+			</div>
+		</div>
+		[% END %]
+
+		<div style="padding:10px 0;">
+			<span style="display:inline-flex; align-items:center; gap:8px;">
+				<label class="stdlabel" for="sleepStatus" style="margin:0;">[% "PLUGIN_MIPSTER_WEB_SLEEP" | string %]</label>
+				<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_WEB_QS_SLEEPNOTE" | string %]</div></span>
+			</span><br>
+			<select class="stdedit" name="sleepStatus" id="sleepStatus" onchange="this.form.submit()">
+				<option [% IF NOT prefs.sleepStatus %]selected [% END %]value="0">[% 'Disabled' | getstring %]</option>
+				<option [% IF prefs.sleepStatus %]selected [% END %]value="1">[% 'Enabled' | getstring %]</option>
+			</select>
+
+		</div>
+
+		<!-- MIX SETTINGS, collapsed. These four are set once and then left alone, unlike the two
+		     pickers above, so they start folded away. The page RELOADS on every change - that is how
+		     it saves - so the group re-opens itself after a change by remembering one flag in the
+		     url. Without that it would snap shut under the user's hand every time they moved a
+		     slider. -->
+		<details id="sc-qs-mixgroup" [% IF mixopen %]open [% END %]style="padding:10px 0;"
+			ontoggle="var f=document.getElementById('mixopen'); if (f) f.value = this.open ? 1 : 0;">
+			<summary style="cursor:pointer; font-weight:bold; padding:6px 0;">[% "PLUGIN_MIPSTER_WEB_QS_MIXSETTINGS" | string %]</summary>
+			<input type="hidden" name="mixopen" id="mixopen" value="[% mixopen %]">
+
+			<div style="padding:10px 0;">
+				<label class="stdlabel" for="chainSize">[% "PLUGIN_MIPSTER_WEB_SIZE" | string %]</label>
+				<span id="chainSizeValue">[% prefs.chainSize || 20 %]</span><br>
+				<input type="range" min="20" max="100" step="20" class="stdedit" name="chainSize" id="chainSize" value="[% prefs.chainSize || 20 %]" style="width:100%;" oninput="document.getElementById('chainSizeValue').textContent=this.value" onchange="this.form.submit()">
+			</div>
+
+			<div style="padding:10px 0;">
+				<label class="stdlabel" for="chainStyle">[% "PLUGIN_MIPSTER_WEB_STYLE" | string %]</label>
+				<span id="chainStyleValue">[% prefs.chainStyle || 20 %]</span><br>
+				<input type="range" min="0" max="200" step="20" class="stdedit" name="chainStyle" id="chainStyle" value="[% prefs.chainStyle || 20 %]" style="width:100%;" oninput="document.getElementById('chainStyleValue').textContent=this.value" onchange="this.form.submit()">
+			</div>
+
+			<div style="padding:10px 0;">
+				<label class="stdlabel" for="chainVariety">[% "PLUGIN_MIPSTER_WEB_VARIETY" | string %]</label>
+				<span id="chainVarietyValue">[% prefs.chainVariety || 0 %]</span><br>
+				<input type="range" min="0" max="9" step="1" class="stdedit" name="chainVariety" id="chainVariety" value="[% prefs.chainVariety || 0 %]" style="width:100%;" oninput="document.getElementById('chainVarietyValue').textContent=this.value" onchange="this.form.submit()">
+			</div>
+
+			<div style="padding:10px 0;">
+				<label class="stdlabel" for="chainRejectsize">[% "PLUGIN_MIPSTER_WEB_REJECTSIZE" | string %]</label>
+				<span id="chainRejectsizeValue">[% prefs.chainRejectsize || 0 %]</span><br>
+				<input type="range" min="0" max="10" step="1" class="stdedit" name="chainRejectsize" id="chainRejectsize" value="[% prefs.chainRejectsize || 0 %]" style="width:100%;" oninput="document.getElementById('chainRejectsizeValue').textContent=this.value" onchange="this.form.submit()">
+			</div>
+
+			<!-- COPY TO SELECTED PLAYERS. The tickboxes only choose; nothing is copied until the button.
+			     The button is a plain link out of the form on purpose - it must copy what is STORED, not
+			     whatever is half-dragged on screen - so it carries the ticked ids and nothing else.
+			     mixopen=1 brings the page back with this group still open, so the result line shows.
+			     The handler writes the values to those players and stops: no replace, no MusicIP fetch.
+			     They pick them up at their next track. -->
+			<div style="padding:14px 0 4px 0; border-top:1px solid rgba(128,128,128,0.3); margin-top:6px;">
+				[% FOREACH op IN otherplayers %]
+				<label style="display:block; padding:3px 0; cursor:pointer;"><input type="checkbox" class="mipm-copyto" value="[% op.id | html %]"> [% op.name | html %]</label>
+				[% END %]
+				<div style="display:flex; align-items:center; gap:8px; padding-top:6px;">
+				<button type="button" onclick="mipmCopyTo()" style="padding:8px 16px; cursor:pointer;">[% "PLUGIN_MIPSTER_WEB_QS_COPYALL" | string %]</button>
+				<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_WEB_QS_COPYALLNOTE" | string %]</div></span>
+				</div>
+				<script type="text/javascript">
+				function mipmCopyTo() {
+					var ids = [];
+					var boxes = document.querySelectorAll('input.mipm-copyto');
+					for (var i = 0; i < boxes.length; i++) { if (boxes[i].checked) ids.push(boxes[i].value); }
+					if (!ids.length) return;
+					window.location.href = '[% webroot %][% path %]?player=[% player | uri %]&mixopen=1&copyto=' + encodeURIComponent(ids.join(','));
+				}
+				</script>
+			</div>
+		</details>
+
+		<!-- MIP POWER SEARCH, LAST ON THE PAGE and below the Mix Settings group on purpose. It is a
+		     niche control, set once and then left alone, and under the Filter dropdown it read as part
+		     of choosing a filter. A link out of the form, like Copy to All Players, so it carries the
+		     player and nothing half-typed. The button is ALWAYS here; what it can do depends on the
+		     host, and the page itself says so. -->
+		<div style="padding:16px 0 4px 0; border-top:1px solid rgba(128,128,128,0.3); margin-top:14px;">
+			<div style="display:flex; align-items:center; gap:8px;">
+				<button type="button" onclick="window.location.href='[% webroot %]plugins/MIPster/settings/powersearch.html?player=[% player | uri %]'" style="padding:6px 14px; cursor:pointer;">[% "PLUGIN_MIPSTER_PS_BUTTON" | string %]</button>
+				<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_PS_BUTTONHELP" | string %]</div></span>
+			</div>
+		</div>
+
+		<noscript><button type="submit">[% "PLUGIN_MIPSTER_WEB_QS_APPLY" | string %]</button></noscript>
+
+	</form>
+</div>
+
+[%# PLAYER BAR - Previous, Play/Pause, Next and a progress line, fixed to the foot of the page. Copied %]
+[%# from HB64's build on purpose: it draws in Material's own colours (--text-color, --background-color), %]
+[%# which is what the 0.6.1 ruling against hand-styled controls was missing. The same block is in     %]
+[%# quicksettings.html and liveview.html - duplicated, not included, so one bad include cannot take   %]
+[%# both pages down. It sits outside anything a page rebuilds, so a refresh never touches it.         %]
+<style>
+	#mipTransport { position:fixed; left:0; right:0; bottom:0; z-index:1000; box-sizing:border-box; padding:0 8px; display:flex; flex-direction:column; background:var(--background-color, #303030); border-top:1px solid var(--list-item-border-color, rgba(128,128,128,0.3)); }
+	#mipTbTimes { display:flex; align-items:center; gap:10px; height:24px; padding:0 12px; font-size:0.75em; opacity:0.8; color:var(--text-color, #eee); }
+	#mipTbTrack { flex:1; height:4px; border-radius:2px; overflow:hidden; background:rgba(128,128,128,0.3); }
+	#mipTbFill { height:100%; width:0%; background:var(--text-color, #eee); transition:width 0.9s linear; }
+	.mipTbRow { display:flex; align-items:center; justify-content:center; gap:40px; height:64px; }
+	.mipTbBtn { background:transparent !important; color:var(--text-color, #eee) !important; border:none !important; box-shadow:none !important; cursor:pointer !important; padding:0 !important; margin:0 4px !important; display:flex !important; align-items:center !important; justify-content:center !important; opacity:0.85 !important; }
+	.mipTbBtn:hover { opacity:1 !important; }
+	.mipTbPlay { background:var(--text-color, #eee) !important; border-radius:50% !important; width:44px !important; height:44px !important; opacity:1 !important; }
+	#mipTbSpacer { height:100px; }
+</style>
+<div id="mipTbSpacer"></div>
+<div id="mipTransport">
+	<div id="mipTbTimes"><span id="mipTbElapsed">0:00</span><div id="mipTbTrack"><div id="mipTbFill"></div></div><span id="mipTbDur"></span></div>
+	<div class="mipTbRow">
+		<button type="button" class="mipTbBtn" onclick="mipTbCmd(['playlist','index','-1'])" title="[% "PLUGIN_MIPSTER_TB_PREV" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_PREV" | string %]"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+		<button type="button" class="mipTbBtn mipTbPlay" onclick="mipTbCmd(['pause'])" title="[% "PLUGIN_MIPSTER_TB_PLAY" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_PLAY" | string %]">
+			<svg id="mipTbIconPlay" width="26" height="26" viewBox="0 0 24 24" fill="var(--background-color, #303030)"><path d="M8 5v14l11-7z"/></svg>
+			<svg id="mipTbIconPause" width="26" height="26" viewBox="0 0 24 24" fill="var(--background-color, #303030)" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+		</button>
+		<button type="button" class="mipTbBtn" onclick="mipTbCmd(['playlist','index','+1'])" title="[% "PLUGIN_MIPSTER_TB_NEXT" | string %]" aria-label="[% "PLUGIN_MIPSTER_TB_NEXT" | string %]"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+	</div>
+</div>
+<script type="text/javascript">
+	var mipTbPlayer = "[% player %]";
+	var mipTb = { t: 0, d: 0, playing: false, at: 0 };
+	function mipTbRpc(cmd, done) {
+		var r = new XMLHttpRequest();
+		r.open('POST', '/jsonrpc.js', true);
+		r.setRequestHeader('Content-Type', 'application/json');
+		r.onloadend = function () { if (done) { done(r.responseText); } };
+		r.send(JSON.stringify({ id: 1, method: 'slim.request', params: [mipTbPlayer, cmd] }));
+	}
+	function mipTbFmt(x) { x = Math.max(0, Math.round(x)); return Math.floor(x / 60) + ':' + ((x % 60) < 10 ? '0' : '') + (x % 60); }
+	function mipTbRender() {
+		var el = mipTb.t + (mipTb.playing ? (Date.now() - mipTb.at) / 1000 : 0);
+		if (mipTb.d > 0 && el > mipTb.d) { el = mipTb.d; }
+		document.getElementById('mipTbElapsed').textContent = mipTbFmt(el);
+		document.getElementById('mipTbDur').textContent = mipTb.d > 0 ? mipTbFmt(mipTb.d) : '';
+		document.getElementById('mipTbFill').style.width = (mipTb.d > 0 ? Math.min(100, el * 100 / mipTb.d) : 0) + '%';
+		document.getElementById('mipTbIconPlay').style.display = mipTb.playing ? 'none' : '';
+		document.getElementById('mipTbIconPause').style.display = mipTb.playing ? '' : 'none';
+	}
+	function mipTbPoll() {
+		mipTbRpc(['status', '-', '1', 'tags:'], function (text) {
+			try {
+				var r = (JSON.parse(text) || {}).result || {};
+				mipTb.t = parseFloat(r.time) || 0; mipTb.d = parseFloat(r.duration) || 0;
+				mipTb.playing = (r.mode === 'play'); mipTb.at = Date.now();
+				mipTbRender();
+			} catch (e) {}
+		});
+	}
+	function mipTbCmd(cmd) {
+		mipTbRpc(cmd, function () {
+			mipTbPoll();
+			if (typeof scLvRefresh === 'function') { scLvRefresh(); }
+		});
+	}
+	mipTbPoll();
+	setInterval(mipTbRender, 500);
+	setInterval(mipTbPoll, 5000);
+</script>
+
+[% PROCESS pagefooter.html %]
