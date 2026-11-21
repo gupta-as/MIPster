@@ -3,10 +3,11 @@
 # Modifications by AF, (c) 2024
 # Licensed under the GPLv3 - see LICENSE file
 
-# THE EXPORTS PAGE. The export controls and the rating bands the export writes, on one page, with one
-# Save. The bands are validated AS A SET - each must start higher than the one before - and a set that
-# fails refuses the whole page, the export time included. That is deliberate: a half-saved page is
-# worse than a refused one, and the user asked for all-or-nothing here.
+# THE ADVANCED PAGE (the module keeps its old name, SettingsExports, and its header). It holds what the
+# user almost never changes: the rating bands with Restore Defaults, SQLite Timeout, Pause before Next
+# Fetch, and MIP Custom Tags. One Save. The bands are validated AS A SET - each must start higher than
+# the one before - and a set that fails refuses the WHOLE page: a half-saved page is worse than a
+# refused one. The export controls are on the Basic page (Settings.pm).
 
 package Plugins::MIPster::SettingsExports;
 
@@ -31,20 +32,22 @@ my %BANDDEFAULTS = (
 	exportBand5   => 90,
 );
 
+my @ADVPREFS = qw(sqlitetimeout mipDelay);
+
 sub name {
-	 return Slim::Web::HTTP::CSRF->protectName('PLUGIN_MIPSTER_SUBPAGE_EXPORTS');
+	 return Slim::Web::HTTP::CSRF->protectName('PLUGIN_MIPSTER_SUBPAGE_ADVANCED');
 }
 
 sub page {
-	 return Slim::Web::HTTP::CSRF->protectURI('plugins/MIPster/settings/exports.html');
+	 return Slim::Web::HTTP::CSRF->protectURI('plugins/MIPster/settings/advanced.html');
 }
 
 sub currentPage {
-	 return Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_EXPORTS');
+	 return Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_ADVANCED');
 }
 
 sub pages {
-	 return [{ 'name' => Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_EXPORTS'), 'page' => page() }];
+	 return [{ 'name' => Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_ADVANCED'), 'page' => page() }];
 }
 
 sub scValidateBands {
@@ -72,6 +75,9 @@ sub scValidateBands {
 sub handler {
 	 my ( $class, $client, $params ) = @_;
 
+	 my @offered = Plugins::MIPster::Plugin::scTagFields();
+	 my %ok = map { $_->{'id'} => 1 } @offered;
+
 	 # Restore Defaults is its own button and does not go through the validator - the stock scale is
 	 # valid by definition, and needing a valid page in order to get back to a valid page would be a
 	 # trap. It writes and returns; nothing else on the page is saved by that press.
@@ -89,15 +95,23 @@ sub handler {
 				$prefs->set( $key, $params->{$key} );
 			}
 
-			# The time may be saved empty, and empty is the off switch for the daily export. Do not
-			# refuse a blank value or substitute a default - that would remove the only way to turn
-			# it off.
-			my $exporttime = $params->{'exportTime'};
-			if (defined $exporttime) {
-				$exporttime =~ s/^\s+|\s+$//g;
-				$prefs->set( 'exportTime', "$exporttime" );
+			foreach my $pref (@ADVPREFS) {
+				next unless defined $params->{$pref};
+				my $value = $params->{$pref};
+				$value =~ s/^\s+|\s+$//g;
+				$prefs->set( $pref, "$value" );
 			}
-			$prefs->set( 'exportPostscan', $params->{'exportPostscan'} ? 1 : 0 );
+
+			# MIP CUSTOM TAGS: the rows post as customtag0, customtag1 ... in screen order. Each offered
+			# field once. A field left without a row is cleared by the next export (scMIPTagsClear).
+			my @keys = sort { ($a =~ /(\d+)$/)[0] <=> ($b =~ /(\d+)$/)[0] } grep { /^customtag\d+$/ } keys %$params;
+			my (@chosen, %seen);
+			foreach my $k (@keys) {
+				my $v = $params->{$k} // '';
+				push @chosen, $v if $ok{$v} && !$seen{$v}++;
+			}
+			$prefs->set('customTags', \@chosen);
+			main::INFOLOG && $log->is_info && $log->info("MIP custom tags set to: ".(join(', ', @chosen) || 'none')."\n");
 
 		} else {
 			$log->error("MusicIP rating bands refused ($why) - each band must start higher than the "
@@ -106,35 +120,15 @@ sub handler {
 		}
 	 }
 
-	 # Export Now is never gated by the two automatic controls above; it is pressable the moment this
-	 # build is installed, on the STOCK bands rather than this user's values, and an export on them
-	 # rewrites most of the library on the wrong scale. That is why the bands are on this page.
-	 if ( $params->{'scexportnow'} ) {
-		if ( $prefs->get('exportInprogress') ) {
-			$log->warn("Export Now ignored - a MusicIP export is already running\n");
-		} else {
-			$log->info("Export Now pressed - starting a MusicIP export\n");
-			Slim::Utils::Scheduler::add_task( \&Plugins::MIPster::Plugin::scMIPExportRun );
-		}
-	 } elsif ( $params->{'scexportabort'} ) {
-		Plugins::MIPster::Plugin::scMIPExportAbort();
-	 }
-
-	 foreach my $key (keys %BANDDEFAULTS) {
+	 foreach my $key ((keys %BANDDEFAULTS), @ADVPREFS) {
 		$params->{'prefs'}->{$key} = $prefs->get($key);
 	 }
-	 $params->{'prefs'}->{'exportTime'} = $prefs->get('exportTime');
-	 $params->{'prefs'}->{'exportPostscan'} = $prefs->get('exportPostscan');
+
+	 my $chosen = $prefs->get('customTags');
+	 $params->{'tagchosen'} = [ grep { $ok{$_} } (ref $chosen eq 'ARRAY' ? @$chosen : ()) ];
+	 $params->{'tagfields'} = [ map { { id => $_->{'id'}, label => Slim::Utils::Strings::string($_->{'label'}) } } @offered ];
 
 	 return $class->SUPER::handler( $client, $params );
-}
-
-sub beforeRender {
-	my ($class, $params) = @_;
-
-	$params->{'squeezebox_server_jsondatareq'} = '/jsonrpc.js';
-	$params->{'scactivelmsscan'} = 1 if (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning);
-	$params->{'scactivemipexport'} = 1 if $prefs->get('exportInprogress');
 }
 
 1;

@@ -335,7 +335,10 @@
 		</div>
 
 		<div style="padding:10px 0;">
-			<label class="stdlabel" for="chainRecipe">[% "PLUGIN_MIPSTER_WEB_RECIPE" | string %]</label><br>
+			<span style="display:inline-flex; align-items:center; gap:8px;">
+				<label class="stdlabel" for="chainRecipe" style="margin:0;">[% "PLUGIN_MIPSTER_WEB_RECIPE" | string %]</label>
+				<span class="mipm-info"><a href="javascript:void(0)" class="mipm-mark" onclick="mipmInfo(this)" title="Help" aria-label="Help">&#9432;</a><div class="mipm-pop">[% "PLUGIN_MIPSTER_WEB_QS_RECIPENOTE" | string %]</div></span>
+			</span><br>
 			<select class="stdedit" name="chainRecipe" id="chainRecipe" onchange="this.form.submit()">
 			[% FOREACH option IN receipes.keys.sort %]
 				<option [% IF prefs.chainRecipe == option %]selected [% END %]value="[% option %]">[% receipes.$option %]</option>
@@ -410,6 +413,9 @@
 				<input type="range" min="20" max="100" step="20" class="stdedit" name="chainSize" id="chainSize" value="[% prefs.chainSize || 20 %]" style="width:100%;" oninput="document.getElementById('chainSizeValue').textContent=this.value" onchange="this.form.submit()">
 			</div>
 
+			[%# STYLE AND VARIETY ONLY WITH NO RECIPE - MusicIP ignores both when a recipe is sent. The page   %]
+			[%# reloads on a Recipe change, so this is decided here. Still stored and sent; Copy carries them. %]
+			[% IF !screcipeset %]
 			<div style="padding:10px 0;">
 				<label class="stdlabel" for="chainStyle">[% "PLUGIN_MIPSTER_WEB_STYLE" | string %]</label>
 				<span id="chainStyleValue">[% prefs.chainStyle || 20 %]</span><br>
@@ -421,6 +427,7 @@
 				<span id="chainVarietyValue">[% prefs.chainVariety || 0 %]</span><br>
 				<input type="range" min="0" max="9" step="1" class="stdedit" name="chainVariety" id="chainVariety" value="[% prefs.chainVariety || 0 %]" style="width:100%;" oninput="document.getElementById('chainVarietyValue').textContent=this.value" onchange="this.form.submit()">
 			</div>
+			[% END %]
 
 			<div style="padding:10px 0;">
 				<label class="stdlabel" for="chainRejectsize">[% "PLUGIN_MIPSTER_WEB_REJECTSIZE" | string %]</label>

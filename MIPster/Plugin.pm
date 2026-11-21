@@ -35,6 +35,9 @@ use LWP::UserAgent;
 use Slim::Utils::Scheduler;
 use Slim::Utils::DateTime;
 use Slim::Music::Import;
+use Encode ();
+use Unicode::Normalize ();
+use File::Spec;
 my @unique = ();
 my @myworkingset = ();
 my $prefs = preferences('plugin.mipster');
@@ -513,10 +516,14 @@ sub jiveMIPsterMenu {
 		},
 		scJiveChoice('PLUGIN_MIPSTER_JIVE_SIZE', 'chainSize',
 			scJiveNearest($cprefs->get('chainSize') // 20, @sizestops), @sizestops),
+		# Style and Variety only with no recipe: MusicIP ignores both when a recipe is sent. Still stored
+		# and sent - only left out of the menu. The menu is rebuilt every time it opens.
+		(scIsNone($cprefs->get('chainRecipe')) ? (
 		scJiveChoice('PLUGIN_MIPSTER_JIVE_MIXSTYLE', 'chainStyle',
 			scJiveNearest($cprefs->get('chainStyle') // 20, @stylestops), @stylestops),
 		scJiveChoice('PLUGIN_MIPSTER_JIVE_VARIETY', 'chainVariety',
 			$cprefs->get('chainVariety') // 0, @varietystops),
+		) : ()),
 		scJiveChoice('PLUGIN_MIPSTER_JIVE_SPACING', 'chainRejectsize',
 			$cprefs->get('chainRejectsize') // 0, @rejectstops),
 		{
@@ -1085,8 +1092,10 @@ sub gotMIP {
 
 			if (length($song) == 0) {
 				$log->error("MUSICIP RETURNED NOTHING - the Filter and Recipe found no tracks\n");
-				$mixstatus{$client->id} = 'MusicIP returned nothing. Check Filter/Recipe';
-				scTellUser ($client, $client->string('PLUGIN_MIPSTER_POPUP_NOTRACKS'), 'error');
+				my $emptytoken = (($params->{'caller'} // '') eq 'SpiceflyAlarm')
+					? 'PLUGIN_MIPSTER_POPUP_NOTRACKS' : 'PLUGIN_MIPSTER_POPUP_NOTRACKS_REPEAT';
+				$mixstatus{$client->id} = $client->string($emptytoken);
+				scTellUser ($client, $client->string($emptytoken), 'error');
 
 				# Never invent a track. MusicIP answered with nothing, so the Filter or Recipe found nothing.
 				# Queuing nothing and an explicit stop were both tried and both failed - do not propose either again.
@@ -1115,6 +1124,10 @@ sub gotMIP {
 				}
 			} else {
 				$log->debug("\nQueueing; $myworkingset[4] : $myworkingset[1]\n");
+				if ($params->{'noseed'}) {
+					$log->warn("RANDOM PICK - MusicIP refused the seed; this track is a random pick from the Filter\n");
+					scTellUser ($client, $client->string('PLUGIN_MIPSTER_POPUP_RANDOMPICK'));
+				}
 			}
 
 			if (length($song) != 0) {
@@ -1312,9 +1325,9 @@ sub buildMIPReq {
 
 	my $seedparam = '';
 	if ($seedtype eq 'album') {
-		$seedparam = '&album%3d' . $tracktitle; # album= takes a full path to ANY song on it
+		$seedparam = '&album=' . $tracktitle; # album= takes a full path to ANY song on it
 	} elsif ($seedtype eq 'song') {
-		$seedparam = '&song%3d' . $tracktitle;
+		$seedparam = '&song=' . $tracktitle;
 
 		# Override Shuffle, triggered on a song= request and nowhere else. A song seed means the chain
 		# re-seeds from the playing track, and LMS shuffle breaks that at both ends - it re-seeds from
@@ -1413,11 +1426,42 @@ sub scTellUser {
 	}
 }
 
+# THE FOUR CASES (1.3.1, FROM USER). Lyrion's async HTTP says how a request failed (read from its
+# source, Slim::Networking::Async*): a reply that is not a success comes with its status code and NO
+# body; a failure to connect says 'Connect timed out'; anything after connecting (no data in time, a
+# broken socket) is the rest.
+#   1 bad seed      MusicIP refused a seeded chain request -> ask again without the seed: a random pick
+#                   from the same Filter. Only if that also fails is it case 2.
+#   2 bad filter    refused (or empty) without a seed -> repeat the track, "MIP returned nothing".
+#   3 busy          connected, no answer in time      -> repeat the track, "MIP busy".
+#   4 unreachable   could not connect                 -> repeat the track, "Can't reach MIP".
+# A refused reply cannot say whether the seed or the filter was wrong; the unseeded retry is what tells.
 sub gotErrorViaHTTP {
-	my $http = shift;
+	my ($http, $error, $response) = @_;
 	my $params = $http->params();
 	my $client = $params->{'client'};
-	gotErrorContinue ($client, $http, 'unreachable');
+	$error = '' unless defined $error;
+
+	my $case;
+	if ($response && $response->code && $response->code !~ /^2/) {
+		$case = 'refused';
+	} elsif ($error =~ /^(?:Connect timed out|Couldn't resolve)/) {
+		$case = 'unreachable';
+	} else {
+		$case = 'busy';
+	}
+	$log->error("MUSICIP REQUEST FAILED ($case); $error\n");
+
+	if ($case eq 'refused' && ($params->{'caller'} // '') eq 'Spicefly' && !$params->{'noseed'}) {
+		my $url = $http->url // '';
+		if ($url =~ s/&(?:song|album)=[^&]*//) {
+			$log->error("SEED REFUSED - asking MusicIP again without the seed (a random pick from the Filter)\n");
+			SendtoMIPAsync ($client, $url, 1);
+			return;
+		}
+	}
+
+	gotErrorContinue ($client, $http, $case);
 }
 
 sub gotErrorContinue {
@@ -1425,28 +1469,21 @@ sub gotErrorContinue {
 	my $http = shift;
 	my $case = shift // 'unreachable';
 
-	my $content = $http->content();
-
-	my $why;
-	if ($content eq 'API error - invalid request or internal error.') {
-		$why = 'API error - invalid request or internal error';
-	} elsif ($content eq '') {
-		$why = 'no reply at all - check the MusicIP service is running';
-	} else {
-		$why = 'unrecognized reply';
-	}
-
-	if ($case eq 'empty') {
-		$log->error("MUSICIP RETURNED NOTHING; $why\n");
-		$mixstatus{$client->id} = 'MusicIP returned nothing. Check Filter/Recipe';
-		scTellUser ($client, $client->string('PLUGIN_MIPSTER_POPUP_NOTRACKS'), 'error');
-	} else {
-		$log->error("MUSICIP COULD NOT BE REACHED; $why\n");
-		$mixstatus{$client->id} = 'Cannot reach MusicIP. Check service/SC plugin settings';
-		scTellUser ($client, $client->string('PLUGIN_MIPSTER_POPUP_NOMIP'), 'error');
-	}
-
 	my $errcreator = $http->params()->{'caller'} || '';
+
+	# One message per case. The '_REPEAT' wording is used only where the track really is repeated:
+	# a batch stops, an alarm plays a fallback and Auto Mix has just cleared the queue, so they get
+	# the plain wording.
+	my $token = ($case eq 'busy') ? 'PLUGIN_MIPSTER_POPUP_BUSY'
+		: ($case eq 'unreachable') ? 'PLUGIN_MIPSTER_POPUP_NOMIP'
+		: 'PLUGIN_MIPSTER_POPUP_NOTRACKS'; # 'empty' and 'refused' - case 2
+	$token .= '_REPEAT'
+		unless ($errcreator eq 'SCBatch' || $errcreator eq 'SpiceflyAlarm' || $errcreator eq 'SpiceflyAutoMix');
+	my $msg = $client->string($token);
+
+	$log->error("MUSICIP FAILED ($case); $msg\n");
+	$mixstatus{$client->id} = $msg;
+	scTellUser ($client, $msg, 'error');
 
 	if ($errcreator eq 'SCBatch') {
 		$log->error("SC BATCH FAILED - the queue was cleared before the request, so there is nothing "
@@ -1509,6 +1546,7 @@ sub gotErrorContinue {
 sub SendtoMIPAsync {
 	my $client = shift;
 	my $mypageurl = shift;
+	my $noseed = shift // 0; # 1 = the unseeded retry after a refused seed (case 1); never retried again
 	my $http = Slim::Networking::SimpleAsyncHTTP->new(
 		\&gotMIP,
 		\&gotErrorViaHTTP,
@@ -1516,6 +1554,7 @@ sub SendtoMIPAsync {
 			caller => 'Spicefly',
 			callerProc => \&SendtoMIPAsync,
 			client => $client,
+			noseed => $noseed,
 			timeout => 60
 		}
 	);
@@ -1761,8 +1800,6 @@ sub webPages {
 	Slim::Web::Pages->addPageFunction ("$urlBase/liveview.html", \&handleWebList);
 	Slim::Web::HTTP::CSRF->protectURI("$urlBase/liveview.html");
 
-	Slim::Web::Pages->addPageFunction ("$urlBase/quickplay.html", \&handleWebQP);
-	Slim::Web::HTTP::CSRF->protectURI("$urlBase/quickplay.html");
 
 	Slim::Web::Pages->addPageLinks( "icons", { 'PLUGIN_MIPSTERQS' => 'plugins/MIPster/HTML/images/mipster.png' });
 	Slim::Web::Pages->addPageFunction ("$urlBase/quicksettings.html", \&handleWebQuickSettings);
@@ -1911,6 +1948,10 @@ sub handleWebQuickSettings {
 	$params->{receipes} = Plugins::MIPster::MipLists::getReceipesList();
 	$params->{moods} = Plugins::MIPster::MipLists::getMoodsList();
 
+	# STYLE AND VARIETY ARE SHOWN ONLY WITH NO RECIPE. MusicIP ignores both when a recipe is sent
+	# (reference doc §B.1); they are still stored and still sent either way - only hidden.
+	$params->{screcipeset} = scIsNone($prefs->client($client)->get('chainRecipe')) ? 0 : 1;
+
 	return Slim::Web::HTTP::filltemplatefile ($htmlQuickSettings, $params);
 }
 
@@ -1990,20 +2031,6 @@ sub handleWebPowerSearch {
 	$params->{psfields} = \@fields;
 
 	return Slim::Web::HTTP::filltemplatefile ($htmlPowerSearch, $params);
-}
-
-sub handleWebQP {
-	my ($client, $params) = @_;
-	$client = Slim::Player::Client::getClient ($params->{player});
-	if ($client) {
-		mixfromplaying ($client, "yes");
-
-		$params->{refresh} = 1;
-
-		$params->{path} = $htmlTemplateLV;
-
-		return handleWebList ($client, $params);
-	}
 }
 
 sub scLVNoTrack {
@@ -2144,6 +2171,7 @@ sub scMIPExportInitPrefs {
 		exportCacheid => 0,
 		exportResult => 0,
 		exportLastMessage => '',
+		customTags => [],
 	});
 
 	# exportResult and exportLastMessage are NOT reset here. They hold how the last export ended and
@@ -2262,6 +2290,9 @@ sub scMIPExportRun {
 				}
 			}
 		}
+
+		# THE CUSTOM TAGS, after the stats and before the one flush below, so both land in the same save.
+		scMIPTagsWrite($mip_hostname, $mip_port, $mip_timeout) unless $scMIPExportAborted;
 
 		scMIPExportFinish($mip_hostname, $mip_port, $mip_timeout) unless $scMIPExportAborted;
 	}
@@ -2522,6 +2553,210 @@ sub scMIPExportPostScanDelayed {
 	main::INFOLOG && $log->is_info && $log->info("Starting the post-scan MusicIP export\n");
 	eval { Slim::Utils::Scheduler::add_task(\&scMIPExportRun); };
 	$log->error("Post-scan MusicIP export failed to start; $@\n") if $@;
+}
+
+# ================================================================================================
+# MIP CUSTOM TAGS. Each export writes every chosen field, for every track in MusicIP's library, as a
+# custom field named 'mip' + field (mipgenre, mipartist...). The value is MusicIP's OWN string for that
+# field, split at ';', each value CamelCased into one word, duplicates dropped ignoring case, joined by
+# spaces - so overlap() in a recipe counts shared VALUES, not shared words (reference doc §D).
+# Same rule as MIP_test_scripts\keyfield_perf.py backfill, on purpose: the 2026-11-14 backfill and
+# this export must produce identical strings, or recipes would see two spellings.
+#
+# The paths come from MusicIP's own library read, not from Lyrion: the backfill wrote 109,364 tracks
+# on MusicIP's paths with no failure, where Lyrion's paths draw about 25 refusals on the stats.
+# No value means no write - a value already in the cache is left as it is.
+# ================================================================================================
+
+# THE OFFERED FIELDS. Only these arrive ';'-joined in /api/songs (Debian mip, 2026-11-14). Conductor
+# was never joined and comments is empty in this cache, so neither is offered. An offered field with
+# no row is CLEARED by the export (scMIPTagsClear): removing a row is how a tag is removed.
+my @scTagFields = (
+	{ id => 'genre',     label => 'PLUGIN_MIPSTER_PS_F_GENRE'     },
+	{ id => 'artist',    label => 'PLUGIN_MIPSTER_PS_F_ARTIST'    },
+	{ id => 'composer',  label => 'PLUGIN_MIPSTER_PS_F_COMPOSER'  },
+	{ id => 'orchestra', label => 'PLUGIN_MIPSTER_PS_F_ORCHESTRA' },
+	{ id => 'lyricist',  label => 'PLUGIN_MIPSTER_TAGS_F_LYRICIST' },
+);
+
+sub scTagFields { return @scTagFields; }
+
+# The chosen rows, cleaned: only offered fields, each once, in the order saved.
+sub scTagChosen {
+	my $chosen = $prefs->get('customTags');
+	return () unless ref $chosen eq 'ARRAY';
+	my %ok = map { $_->{'id'} => 1 } @scTagFields;
+	my %seen;
+	return grep { $ok{$_} && !$seen{$_}++ } @$chosen;
+}
+
+# One value as one word: accents stripped, '&' and every other non-letter-or-digit split, each piece
+# keeps its own capitals with its first letter raised. Mirrors camel() in keyfield_perf.py.
+sub scTagCamel {
+	my $value = shift;
+	my $v = Unicode::Normalize::NFKD($value);
+	$v = join '', grep { Unicode::Normalize::getCombinClass(ord $_) == 0 } split //, $v;
+	$v =~ s/&/ /g;
+	return join '', map { ucfirst $_ } grep { length } split /[^0-9A-Za-z]+/, $v;
+}
+
+# The whole field: split at ';', each value one word, duplicates out ignoring case, space-joined.
+# Mirrors key_value() in keyfield_perf.py. Takes MusicIP's raw bytes.
+sub scTagValue {
+	my $raw = shift;
+	return '' unless defined $raw && length $raw;
+	my $text = Encode::decode('UTF-8', $raw);
+	my (@out, %seen);
+	foreach my $part (split /;/, $text) {
+		$part =~ s/^\s+|\s+$//g;
+		my $c = scTagCamel($part);
+		push @out, $c if length $c && !$seen{lc $c}++;
+	}
+	return join ' ', @out;
+}
+
+# ONE READ OF THE WHOLE LIBRARY, /api/songs?extended=1, to a file in Lyrion's cache folder rather than
+# into memory (tens of MB). Each track is handed to $each as a hash of the wanted fields plus 'file',
+# all raw bytes. Returns the number of tracks, or undef if the read failed.
+sub scMIPReadLibrary {
+	my ($mip_hostname, $mip_port, $each) = @_;
+
+	my $tmp = File::Spec->catfile(preferences('server')->get('cachedir'), 'mipster_library.txt');
+	my $http = LWP::UserAgent->new;
+	$http->timeout(600);
+	my $url = "http://$mip_hostname:$mip_port/api/songs?extended=1";
+	my $response = $http->get($url, ':content_file' => $tmp);
+	if (!$response->is_success) {
+		$log->warn("MusicIP did not answer the library read at $url\n");
+		unlink $tmp;
+		return undef;
+	}
+
+	my $fh;
+	if (!open($fh, '<:raw', $tmp)) {
+		$log->warn("Could not open the MusicIP library read $tmp; $!\n");
+		return undef;
+	}
+	my $count = 0;
+	my %cur;
+	while (1) {
+		my $line = <$fh>;
+		if (!defined $line || $line =~ /^\s*$/) {
+			if (defined $cur{'file'} && length $cur{'file'}) {
+				$count++;
+				$each->(\%cur);
+			}
+			%cur = ();
+			last if !defined $line;
+			next;
+		}
+		$line =~ s/\r?\n$//;
+		my ($k, $v) = split / /, $line, 2;
+		$cur{$k} = $v unless exists $cur{$k};
+	}
+	close $fh;
+	unlink $tmp;
+	return $count;
+}
+
+# CLEARING. For each offered field with NO row, ask MusicIP which tracks still hold its 'mip' tag and
+# empty it on those tracks only (an empty value clears a custom field - reference doc, open item 13).
+# The library read cannot do this: custom fields are not in /api/songs?extended=1. The question is an
+# inline Power Search, so only the Mixer answers it; anything else (headless: 'No such filter') skips
+# the clearing for this export, logged, not counted as an error - the next export asks again. Nothing
+# holding the tag answers empty, about 0.3 s per field. Runs inside the export, before the writes and
+# before the one flush; same Abort, pause and error count.
+sub scMIPTagsClear {
+	my ($mip_hostname, $mip_port, $mip_timeout) = @_;
+
+	my %chosen = map { $_ => 1 } scTagChosen();
+	my $http = LWP::UserAgent->new;
+	my $sent = 0;
+
+	foreach my $f (grep { !$chosen{$_->{'id'}} } @scTagFields) {
+		my $key = "mip$f->{'id'}";
+		$http->timeout(600);
+		my $query = URI::Escape::uri_escape_utf8('?strlen(field "' . $key . '") > 0');
+		my $response = $http->get("http://$mip_hostname:$mip_port/api/songs?filter=$query");
+		if (!$response->is_success) {
+			$log->warn("MusicIP export - could not ask which tracks hold $key (" . $response->status_line
+				. "); not cleared this time. Clearing needs the Mixer.\n");
+			next;
+		}
+		my @paths = grep { length } map { s/\r$//r } split /\n/, $response->content;
+		next unless @paths;
+
+		main::INFOLOG && $log->is_info && $log->info("MusicIP export - clearing $key (no row) on " . scalar(@paths) . " tracks\n");
+		$http->timeout($mip_timeout);
+		my $errorsbefore = $scMIPExportErrors;
+		foreach my $path (@paths) {
+			my $song = URI::Escape::uri_escape($path);
+			scMIPExportCall($http, "http://$mip_hostname:$mip_port/api/setSongField?song=$song&key=$key&value=", "$key empty", $path);
+			main::idleStreams();
+			scMIPPause(\$sent, \$scMIPExportAborted);
+			return if $scMIPExportAborted;
+		}
+		main::INFOLOG && $log->is_info && $log->info("MusicIP export - $key cleared, " . ($scMIPExportErrors - $errorsbefore) . " refused\n");
+	}
+}
+
+# One write per track per chosen field. Called from the export only. Uses the export's own Abort,
+# pause, error count and log lines.
+sub scMIPTagsWrite {
+	my ($mip_hostname, $mip_port, $mip_timeout) = @_;
+
+	scMIPTagsClear($mip_hostname, $mip_port, $mip_timeout);
+	return if $scMIPExportAborted;
+
+	my @fields = scTagChosen();
+	return unless @fields;
+
+	main::INFOLOG && $log->is_info && $log->info("MusicIP export - writing custom tags: ".join(', ', map { "mip$_" } @fields)."\n");
+
+	my $http = LWP::UserAgent->new;
+	$http->timeout($mip_timeout);
+	my $started = time();
+	my $sent = 0;
+	my $errorsbefore = $scMIPExportErrors;
+
+	my $tracks = scMIPReadLibrary($mip_hostname, $mip_port, sub {
+		my $track = shift;
+		return if $scMIPExportAborted;
+
+		# MusicIP's path as MusicIP gave it, raw UTF-8 bytes. Plain uri_escape is right HERE: on bytes it
+		# can never die and it percent-encodes the UTF-8 exactly as MusicIP wants. Not decoded, not
+		# re-encoded (the rule in scMIPPath).
+		my $song = URI::Escape::uri_escape($track->{'file'});
+
+		foreach my $f (@fields) {
+			my $value = scTagValue($track->{$f});
+			next unless length $value;
+			scMIPExportCall($http, "http://$mip_hostname:$mip_port/api/setSongField?song=$song&key=mip$f&value=".URI::Escape::uri_escape($value), "mip$f", $track->{'file'});
+			main::idleStreams();
+			scMIPPause(\$sent, \$scMIPExportAborted);
+			return if $scMIPExportAborted;
+		}
+	});
+
+	if (!defined $tracks) {
+		$scMIPExportErrors++;
+		return;
+	}
+	main::INFOLOG && $log->is_info && $log->info("MusicIP export - custom tags: $sent writes over $tracks tracks, "
+		.($scMIPExportErrors - $errorsbefore)." refused, ".(time() - $started)." seconds\n");
+}
+
+# The stats' pause, shared: one second every 30,000 writes so MusicIP can compute a waiting mix.
+sub scMIPPause {
+	my ($sentref, $abortref) = @_;
+	return unless ++$$sentref % 30000 == 0;
+	main::INFOLOG && $log->is_info && $log->info("MusicIP - pausing one second after $$sentref writes so a waiting player can be served\n");
+	my $pauseuntil = Time::HiRes::time() + 1;
+	while (Time::HiRes::time() < $pauseuntil) {
+		main::idleStreams();
+		last if $$abortref;
+		Time::HiRes::sleep(0.01);
+	}
 }
 
 sub scMIPExportIsTime {

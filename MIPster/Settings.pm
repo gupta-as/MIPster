@@ -3,12 +3,12 @@
 # Modifications by AF, (c) 2024
 # Licensed under the GPLv3 - see LICENSE file
 
-# THE MAIN SETTINGS PAGE. Everything here is server-wide. The per-player controls are on MIP Controls
+# THE BASIC SETTINGS PAGE, the one Lyrion opens first (install.xml optionsURL). Everything here is server-wide. The per-player controls are on MIP Controls
 # and in the player menu; there is no player settings page at all.
 #
 # The three statistics blocks and the four Auto Sleep times used to be per player. They are server
 # values now - one set, one page - and only the Auto Sleep on/off switch stayed with the player.
-# The export controls are NOT here; they are on the Exports page with the bands they write.
+# The export controls are here; the bands they write are on the Advanced page (SettingsExports.pm).
 
 package Plugins::MIPster::Settings;
 
@@ -30,8 +30,6 @@ my @MAINPREFS = qw(
 	mipPort
 	localmediapath
 	nasconvertpath
-	sqlitetimeout
-	mipDelay
 	blockSinceExport
 	blockPlaycount
 	blockRating
@@ -56,11 +54,11 @@ sub page {
 }
 
 sub currentPage {
-	 return Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_MAIN');
+	 return Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_BASIC');
 }
 
 sub pages {
-	 return [{ 'name' => Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_MAIN'), 'page' => page() }];
+	 return [{ 'name' => Slim::Utils::Strings::string('PLUGIN_MIPSTER_SUBPAGE_BASIC'), 'page' => page() }];
 }
 
 sub handler {
@@ -73,13 +71,43 @@ sub handler {
 			$value =~ s/^\s+|\s+$//g;
 			$prefs->set( $pref, "$value" );
 		}
+
+		# The time may be saved empty, and empty is the off switch for the daily export. Do not
+		# refuse a blank value or substitute a default - that would remove the only way to turn
+		# it off. A value that is not a time is refused by the pref's own validator.
+		my $exporttime = $params->{'exportTime'};
+		if (defined $exporttime) {
+			$exporttime =~ s/^\s+|\s+$//g;
+			$prefs->set( 'exportTime', "$exporttime" );
+		}
+		$prefs->set( 'exportPostscan', $params->{'exportPostscan'} ? 1 : 0 );
 	 }
 
-	 foreach my $pref (@MAINPREFS) {
+	 # Export Now is never gated by the two automatic controls above.
+	 if ( $params->{'scexportnow'} ) {
+		if ( $prefs->get('exportInprogress') ) {
+			$log->warn("Export Now ignored - a MusicIP export is already running\n");
+		} else {
+			$log->info("Export Now pressed - starting a MusicIP export\n");
+			Slim::Utils::Scheduler::add_task( \&Plugins::MIPster::Plugin::scMIPExportRun );
+		}
+	 } elsif ( $params->{'scexportabort'} ) {
+		Plugins::MIPster::Plugin::scMIPExportAbort();
+	 }
+
+	 foreach my $pref (@MAINPREFS, 'exportTime', 'exportPostscan') {
 		$params->{'prefs'}->{$pref} = $prefs->get($pref);
 	 }
 
 	 return $class->SUPER::handler( $client, $params );
+}
+
+sub beforeRender {
+	my ($class, $params) = @_;
+
+	$params->{'squeezebox_server_jsondatareq'} = '/jsonrpc.js';
+	$params->{'scactivelmsscan'} = 1 if (!Slim::Schema::hasLibrary() || Slim::Music::Import->stillScanning);
+	$params->{'scactivemipexport'} = 1 if $prefs->get('exportInprogress');
 }
 
 1;

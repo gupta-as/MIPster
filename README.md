@@ -14,7 +14,7 @@ Available features depend on the version and type of MusicIP server you run — 
        https://raw.githubusercontent.com/gupta-as/MIPster/main/repo.xml
 
 2. Click Apply. **MIPster** appears in a group of its own. Tick it, click Apply, and restart Lyrion.
-3. Open MIPster's settings and set the MusicIP host and port (default `localhost:10002`), and, if Lyrion and
+3. Open MIPster's settings (the Basic page) and set the MusicIP host and port (default `localhost:10002`), and, if Lyrion and
    MusicIP see your music under different paths, the two path settings (for example `/music` in Lyrion and
    `Z:\music` in MusicIP).
 
@@ -49,10 +49,16 @@ from a MusicIP mix seeded from the track before, after MIPster trims the mix aga
 tracks already queued are always skipped, and tracks played recently, played often, rated low, or played
 since the last export can be skipped too (each is a setting). A player with the chain on is left alone by Lyrion's "Don't Stop The Music".
 
+**Why a song repeats.** If MusicIP cannot supply the next track, MIPster queues the playing track again as a
+warning, and Live View says why: *MIP returned nothing* (the Filter or Recipe finds no tracks), *MIP busy* or
+*Can't reach MIP*. A song repeating while Lyrion's own repeat is off is this warning. Each repeat is a new
+attempt, so the chain carries on by itself once MusicIP answers. If MusicIP only refuses the seed (a track it
+does not know yet, such as one added since its last scan), MIPster plays a random pick from the Filter instead.
+
 **Batches.** A one-off list of MusicIP tracks added to the queue: from a song or an album (song and album
 menus), or from a mood.
 
-**MIP Controls** are in Extras, one page per player.  The same controls (except for Power Search) are also available in iPeng settings and player menu on hardware players. Chains and mood batches are played and controlled from here. Song or Album based batches are started from the song/album context menu.
+**MIP Controls** are in Extras, one page per player.  The same controls (except for Power Search) are also available in iPeng settings and player menu on hardware players. Chains and mood batches are played and controlled from here. Song or Album based batches are started from the song/album context menu. Under Mix Settings, Style and Variety show only when Recipe is "(None)" — MusicIP ignores Style and Variety when a recipe is used.
 
 **MIP Live View** — the playing track and the next one, with their Lyrion statistics.
 
@@ -63,8 +69,16 @@ MusicIP how many tracks the search leaves, so a typo or a too-narrow search is c
 
 **Statistics export** — play counts, last-played dates and ratings go to MusicIP after each Lyrion library
 scan, at a set time each day, or on demand, and MusicIP's cache is saved at the end. Lyrion's 0–100 ratings
-become MusicIP's 1–5 stars through five bands you set. The Exports page shows how the last export ended and
-when.
+become MusicIP's 1–5 stars through five bands you set (Advanced settings). The Basic settings page shows how
+the last export ended and when.
+
+**MIP custom tags** — each export can also write genre, artist, composer, orchestra or lyricist into MusicIP's
+cache as custom tags (`mipgenre`, …), one word per value, so a recipe line such as
+`overlap(seed field "mipgenre", field "mipgenre") > 0` matches whole values instead of shared words. Country Pop,
+Soul-Jazz and Jazz Rock become `CountryPop`, `SoulJazz` and `JazzRock`, so a Country Pop track no longer
+overlaps with Pop or Country, nor Soul-Jazz with Soul or Jazz Rock. Chosen on the
+Advanced settings page; removing a row clears that tag at the next export. Cache only — files are not touched.
+Clearing needs the MusicIP Mixer.
 
 **Auto Sleep** — between set hours, lowers the volume a step at each track change and sets Lyrion's sleep
 timer for a set number of minutes; on or off per player.

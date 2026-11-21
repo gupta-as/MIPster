@@ -11,28 +11,20 @@
 [%# MIPFlow; they are one set now. Only the Auto Sleep on/off switch stayed with the player, on     %]
 [%# MIP Controls, which is what the subheading below says.                                        %]
 
-[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_MAIN_HOST" desc="PLUGIN_MIPSTER_WEB_MAIN_HOSTDESC" %]
+[%# ONE ROW EACH for the server and the music path (step 2 of the 2026-11-14 spec). The prefs underneath  %]
+[%# are unchanged: mipHost, mipPort, localmediapath, nasconvertpath.                                   %]
+[% WRAPPER setting title="PLUGIN_MIPSTER_MAIN_SERVER" desc="PLUGIN_MIPSTER_MAIN_SERVERDESC" %]
+	<label for="mipHost">[% "PLUGIN_MIPSTER_MAIN_SERVER_URL" | string %]</label>
 	<input type="text" class="stdedit" name="mipHost" id="mipHost" value="[% prefs.mipHost %]" size="15" />
-[% END %]
-
-[% WRAPPER setting title="PLUGIN_MIPSTER_MAIN_PORT" desc="PLUGIN_MIPSTER_MAIN_PORTDESC" %]
+	<label for="mipPort" style="margin-left:14px">[% "PLUGIN_MIPSTER_MAIN_SERVER_PORT" | string %]</label>
 	<input type="text" class="stdedit" name="mipPort" id="mipPort" value="[% prefs.mipPort %]" size="5" />
 [% END %]
 
-[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_LOCALMEDIAPATH" desc="PLUGIN_MIPSTER_WEB_LOCALMEDIAPATHDESC" %]
-	<input type="text" class="stdedit" name="localmediapath" id="localmediapath" value="[% prefs.localmediapath %]" size="30">
-[% END %]
-
-[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_NASCONVERTPATH" desc="PLUGIN_MIPSTER_WEB_NASCONVERTPATHDESC" %]
-	<input type="text" class="stdedit" name="nasconvertpath" id="nasconvertpath" value="[% prefs.nasconvertpath %]" size="30">
-[% END %]
-
-[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TIMEOUT" desc="PLUGIN_MIPSTER_WEB_TIMEOUTDESC" %]
-	<input type="text" class="stdedit sliderInput_30_120_5" name="sqlitetimeout" id="sqlitetimeout" value="[% prefs.sqlitetimeout %]" size="2">
-[% END %]
-
-[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_MAIN_DELAY" desc="PLUGIN_MIPSTER_WEB_MAIN_DELAYDESC" %]
-	<input type="text" class="stdedit sliderInput_1_30_1" name="mipDelay" id="mipDelay" value="[% prefs.mipDelay %]" size="1">
+[% WRAPPER setting title="PLUGIN_MIPSTER_MAIN_MUSICPATH" desc="PLUGIN_MIPSTER_MAIN_MUSICPATHDESC" %]
+	<label for="localmediapath">[% "PLUGIN_MIPSTER_MAIN_PATH_LMS" | string %]</label>
+	<input type="text" class="stdedit" name="localmediapath" id="localmediapath" value="[% prefs.localmediapath %]" size="20">
+	<label for="nasconvertpath" style="margin-left:14px">[% "PLUGIN_MIPSTER_MAIN_PATH_MIP" | string %]</label>
+	<input type="text" class="stdedit" name="nasconvertpath" id="nasconvertpath" value="[% prefs.nasconvertpath %]" size="20">
 [% END %]
 
 <hr>
@@ -81,7 +73,97 @@
 	<input type="text" class="stdedit sliderInput_0_10_1" name="sleepVolumeDrop" id="sleepVolumeDrop" value="[% prefs.sleepVolumeDrop %]" size="1">
 [% END %]
 
+<hr>
+
+[%# THE EXPORT CONTROLS. A BLANK TIME IS THE OFF SWITCH for the daily export, and post-scan answers %]
+[%# for itself. Do not add a switch back. Manual Export is the section's LAST row (FROM USER); its   %]
+[%# running indicator sits beside the buttons; the last export's outcome is the page's last line.  %]
+<style>.scexportbtn{margin-top:-1px;padding:3px}.scexportbtn2{margin-left:14px}:root{--sc-statcolor:red;--sc-statblank:rgba(0,0,0,0)}.scstatus{color:var(--sc-statcolor) !important;font-weight:bold}.scsuccess{color:green !important}.scexporting{margin-left:14px}.scexporting:after{font-size:180%;content:' .';animation:scdots 1.8s steps(5,end) infinite}@keyframes scdots{0%,20%{color:var(--sc-statblank);text-shadow:.25em 0 0 var(--sc-statblank),.5em 0 0 var(--sc-statblank)}40%{color:var(--sc-statcolor);text-shadow:.25em 0 0 var(--sc-statblank),.5em 0 0 var(--sc-statblank)}60%{text-shadow:.25em 0 0 var(--sc-statcolor),.5em 0 0 var(--sc-statblank)}80%,100%{text-shadow:.25em 0 0 var(--sc-statcolor),.5em 0 0 var(--sc-statcolor)}}</style>
+
+<div><b>[% "PLUGIN_MIPSTER_EXPORT_SECTION" | string %]</b></div>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_TIME" desc="PLUGIN_MIPSTER_EXPORT_TIMEDESC" %]
+	<input type="text" class="stdedit" name="exportTime" id="exportTime" value="[% prefs.exportTime %]" size="5">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_POSTSCAN" desc="PLUGIN_MIPSTER_EXPORT_POSTSCANDESC" %]
+	<select class="stdedit" name="exportPostscan" id="exportPostscan">
+		<option [% IF NOT prefs.exportPostscan %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+		<option [% IF prefs.exportPostscan %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+	</select>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_NOW" desc="PLUGIN_MIPSTER_EXPORT_NOWDESC" %]
+	<input class="scexportbtn stdclick" id="scexportnow" name="scexportnow" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_NOW_BUTTON" | string %]"[% IF scactivemipexport or scactivelmsscan %] disabled[% END %]><input class="scexportbtn scexportbtn2 stdclick" id="scexportabort" name="scexportabort" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_ABORT_BUTTON" | string %]"[% IF scactivelmsscan %] disabled[% END %]><span id="scexportrun" class="scstatus" style="display:none"></span>
+[% END %]
+
 <br><b>[% "PLUGIN_MIPSTER_WEB_MAIN_FOOTER" | string %]</b>
 <br>
 
+[%# THE LAST EXPORT'S OUTCOME, the very bottom line. Written by the plugin when an export ends         %]
+[%# (exportLastMessage; exportResult picks the colour, green only for 1) and never cleared, so it shows %]
+[%# across restarts until the next export ends. Hidden while one runs - the indicator above says so.   %]
+<p id="scexportmsg" class="scstatus" style="margin:12px 0 0 0"></p>
+
 [% PROCESS settings/footer.html %]
+
+[%# THE EXPORT STATUS POLLER, moved from the old Exports page. It asks LMS for three prefs over      %]
+[%# JSON-RPC and nothing else. IT STOPS POLLING THE MOMENT THE EXPORT ENDS, so nothing can overwrite %]
+[%# the outcome. If a fetch fails it clears both lines and stops rather than leave a stale indicator. %]
+<script type="text/javascript">
+(function () {
+	var scExportPoll;
+	var scJsonUrl = "[% squeezebox_server_jsondatareq %]";
+
+	function scSet(id, text, cls) {
+		var el = document.getElementById(id);
+		if (!el) return;
+		el.innerHTML = text;
+		el.className = 'scstatus' + (cls ? ' ' + cls : '');
+		el.style.display = text ? '' : 'none';
+	}
+
+	function scGetPref(prefName, done) {
+		fetch(scJsonUrl, {
+			method: "post",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ id: 1, method: 'slim.request',
+				params: ['', ['pref', 'plugin.mipster:' + prefName, '?']] })
+		}).then(function (r) {
+			if (!r.ok) throw new Error('HTTP ' + r.status);
+			return r.json();
+		}).then(function (data) {
+			done(Object.values(data.result)[0]);
+		}).catch(function () {
+			scSet('scexportrun', '', '');
+			scSet('scexportmsg', '', '');
+			clearInterval(scExportPoll);
+		});
+	}
+
+	function scPoll() {
+		scGetPref('exportInprogress', function (v) {
+			var btn = document.getElementById('scexportnow');
+			if (v == 1) {
+				if (btn) btn.disabled = true;
+				scSet('scexportrun', '[% "PLUGIN_MIPSTER_EXPORT_STATUS_RUNNING" | string %]', 'scexporting');
+				scSet('scexportmsg', '', '');
+				return;
+			}
+			if (btn) btn.disabled = false;
+			scSet('scexportrun', '', '');
+			clearInterval(scExportPoll);
+			scGetPref('exportResult', function (r) {
+				scGetPref('exportLastMessage', function (m) {
+					scSet('scexportmsg', m || '', r == 1 ? 'scsuccess' : '');
+				});
+			});
+		});
+	}
+
+	window.addEventListener("load", function () {
+		scPoll();
+		scExportPoll = setInterval(scPoll, 10000);
+	});
+})();
+</script>

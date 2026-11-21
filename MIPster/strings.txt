@@ -2,16 +2,8 @@ PLUGIN_MIPSTER
 	EN	MIPster
 PLUGIN_MIPSTER_DESCINSTALL
 	EN	MusicIP interface that exports Lyrion/APC play history and ratings to MusicIP and integrates MusicIP created chains or batches utilizing filters, recipes, moods and power searches from within Lyrion. Available features depend on version and type of MusicIP server employed.
-PLUGIN_MIPSTER_WEB_MAIN_HOST
-	EN	MusicIP Host Location
-PLUGIN_MIPSTER_WEB_MAIN_HOSTDESC
-	EN	Use IP address or localhost
 PLUGIN_MIPSTER_UPNEXT
 	EN	Next Track
-PLUGIN_MIPSTER_MAIN_PORT
-	EN	MusicIP Port
-PLUGIN_MIPSTER_MAIN_PORTDESC
-	EN	MusicIP Port (Default 10002)
 PLUGIN_MIPSTER_SLEEP_OFF
 	EN	Disable Auto Sleep
 PLUGIN_MIPSTER_INJECTOR_ON
@@ -54,6 +46,8 @@ PLUGIN_MIPSTER_WEB_FILTER
 	EN	Filter
 PLUGIN_MIPSTER_WEB_RECIPE
 	EN	Recipe
+PLUGIN_MIPSTER_WEB_QS_RECIPENOTE
+	EN	With a recipe chosen, MusicIP ignores Style and Variety, so they are shown under Mix Settings and in the player menu only when Recipe is (None).
 PLUGIN_MIPSTER_BATCH_SONG
 	EN	Play MIP Song Batch
 PLUGIN_MIPSTER_BATCH_ALBUM
@@ -67,9 +61,19 @@ PLUGIN_MIPSTER_BATCH_ADD
 PLUGIN_MIPSTER_BATCH_FAILED
 	EN	No MIPster Batch was built - check the server log
 PLUGIN_MIPSTER_POPUP_NOMIP
-	EN	Cannot reach MusicIP
+	EN	Can't reach MIP - check MIP is running
+PLUGIN_MIPSTER_POPUP_NOMIP_REPEAT
+	EN	Can't reach MIP - check MIP is running. Repeating track
 PLUGIN_MIPSTER_POPUP_NOTRACKS
-	EN	MusicIP returned nothing
+	EN	MIP returned nothing - check Filter/Recipe
+PLUGIN_MIPSTER_POPUP_NOTRACKS_REPEAT
+	EN	MIP returned nothing - check Filter/Recipe. Repeating track
+PLUGIN_MIPSTER_POPUP_BUSY
+	EN	MIP busy
+PLUGIN_MIPSTER_POPUP_BUSY_REPEAT
+	EN	MIP busy - repeating track
+PLUGIN_MIPSTER_POPUP_RANDOMPICK
+	EN	Random pick - MIP doesn't know the last track
 PLUGIN_MIPSTER_POPUP_BREACHED
 	EN	MIPster block
 PLUGIN_MIPSTER_POPUP_REPLACINGTRACK
@@ -140,8 +144,6 @@ PLUGIN_MIPSTER_LV_NOTINLIBRARY
 	EN	Track no longer in the library - rebuild the list
 PLUGIN_MIPSTER_LV_TOOMANY
 	EN	More than one track queued - nothing replaced
-PLUGIN_MIPSTERQP
-	EN	MIP Start New Chain
 PLUGIN_MIPSTERQS
 	EN	MIP Controls
 PLUGIN_MIPSTER_WEB_QS_MOODPLAY
@@ -166,16 +168,6 @@ PLUGIN_MIPSTER_WEB_TIMEOUT
 	EN	SQLite Timeout
 PLUGIN_MIPSTER_WEB_TIMEOUTDESC
 	EN	Seconds. A low powered device like a NAS with sluggish Lyrion database responses may require increasing MIPster waiting time to avoid glitches. Takes effect at the next fetch.
-PLUGIN_MIPSTER_WEB_LOCALMEDIAPATH
-	EN	Music Path in LMS
-PLUGIN_MIPSTER_WEB_LOCALMEDIAPATHDESC
-	EN	Only needed if Lyrion uses more than one music folder
-PLUGIN_MIPSTER_WEB_NASCONVERTPATH
-	EN	Music Path in MusicIP
-PLUGIN_MIPSTER_WEB_NASCONVERTPATHDESC
-	EN	Empty means music path is the same as Lyrion's. A different path here e.g. Z:\music will dynamically convert file paths between the two both ways
-
-
 PLUGIN_MIPSTER_EXPORT_TIME
 	EN	Optional Daily Export Time
 PLUGIN_MIPSTER_EXPORT_TIMEDESC
@@ -188,8 +180,6 @@ PLUGIN_MIPSTER_SUBPAGE
 	EN	Settings Section
 PLUGIN_MIPSTER_SUBPAGEDESC
 	EN	Select a settings section
-PLUGIN_MIPSTER_SUBPAGE_MAIN
-	EN	Main
 PLUGIN_MIPSTER_EXPORT_BANDS_RESTORE
 	EN	Restore Defaults
 PLUGIN_MIPSTER_EXPORT_BANDS_REFUSED
@@ -230,12 +220,42 @@ PLUGIN_MIPSTER_EXPORT_LAST_ABORTED
 	EN	Last export aborted %s
 PLUGIN_MIPSTER_EXPORT_LAST_FAILED
 	EN	Last export failed - MusicIP saved nothing %s
-PLUGIN_MIPSTER_SUBPAGE_EXPORTS
-	EN	Exports
+PLUGIN_MIPSTER_SUBPAGE_ADVANCED
+	EN	Advanced
+PLUGIN_MIPSTER_SUBPAGE_BASIC
+	EN	Basic
+PLUGIN_MIPSTER_MAIN_SERVER
+	EN	MIP Server
+PLUGIN_MIPSTER_MAIN_SERVERDESC
+	EN	URL: IP address or localhost. Port: default 10002.
+PLUGIN_MIPSTER_MAIN_SERVER_URL
+	EN	URL
+PLUGIN_MIPSTER_MAIN_SERVER_PORT
+	EN	Port
+PLUGIN_MIPSTER_MAIN_PATH_LMS
+	EN	LMS
+PLUGIN_MIPSTER_MAIN_PATH_MIP
+	EN	MIP
+PLUGIN_MIPSTER_MAIN_MUSICPATH
+	EN	Music Path
+PLUGIN_MIPSTER_MAIN_MUSICPATHDESC
+	EN	LMS: only needed if Lyrion uses more than one music folder. MIP: empty means the same as LMS; a different path, e.g. Z:\music, converts file paths between the two both ways.
+PLUGIN_MIPSTER_EXPORT_SECTION
+	EN	Exports to MusicIP
+PLUGIN_MIPSTER_TAGS
+	EN	MIP Custom Tags
+PLUGIN_MIPSTER_TAGSDESC
+	EN	Every export (nightly, after a scan, Export Now) writes each field chosen here into the MusicIP cache as a custom tag named mip plus the field (mipgenre, mipartist ...), every value as one word, so a recipe matches whole values: copy the line shown on the row into a recipe. Cache only: files and their tags are not touched. Not shown as columns in the MusicIP window. Readable over the API (getSongField) and usable in recipes and in Power Search on the Mixer. A MusicIP cache rebuild loses them; the next export writes them back. Each field adds about 2 minutes to an export. Removing a row empties that tag on every track at the next export, which then stops writing it.
+PLUGIN_MIPSTER_TAGS_ADD
+	EN	Add line
+PLUGIN_MIPSTER_TAGS_REMOVE_ROW
+	EN	Remove
+PLUGIN_MIPSTER_TAGS_F_LYRICIST
+	EN	Lyricist
 PLUGIN_MIPSTER_BLOCK_SECTION
 	EN	Block Following Tracks
 PLUGIN_MIPSTER_BLOCK_SINCEEXPORT
-	EN	Block Tracks Played Since Export
+	EN	Played Since Last Export
 PLUGIN_MIPSTER_BLOCK_SINCEEXPORTDESC
 	EN	MusicIP has no play history since last export. Block tracks here while MIP history is stale.
 PLUGIN_MIPSTER_BLOCK_DO

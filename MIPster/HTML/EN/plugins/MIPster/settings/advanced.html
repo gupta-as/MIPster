@@ -1,0 +1,158 @@
+[% PROCESS settings/header.html %]
+
+[% PROCESS plugins/MIPster/settings/subpage_chooser.html %]
+
+[%# THE ADVANCED PAGE. What the user almost never changes. One Save; a refused band set refuses the   %]
+[%# whole page (SettingsExports.pm). Order as specified 2026-11-14: bands and Restore Defaults, SQLite %]
+[%# Timeout, Pause before Next Fetch, MIP Custom Tags.                                                 %]
+
+<style>
+.scstatus{color:red !important;font-size:120%;font-weight:bold;margin:0 0 12px 0}.scsuccess{color:green !important}.scexportbtn{margin-top:-1px;padding:3px}
+.sctag-row{display:grid;grid-template-columns:11em 7em minmax(0,1fr) 1.4em;column-gap:14px;align-items:center;margin-bottom:6px}
+.sctag-row select,.sctag-row input{width:100%;box-sizing:border-box;min-width:0}
+.sctag-name{font-family:monospace}
+.sctag-line{font-family:monospace;font-size:0.9em}
+.sctag-del{width:18px;height:18px;border:none;border-radius:50%;background:#a4241c;color:#fff;line-height:0;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.sctag-add{font-size:1.1em;display:inline-block;padding:3px 0}
+@media (max-width:560px){.sctag-row{grid-template-columns:minmax(0,1fr) 7em 1.4em;row-gap:5px}.sctag-line{grid-column:1 / span 3;grid-row:2}}
+</style>
+
+[% IF scbandserror %]
+<p class="scstatus">[% "PLUGIN_MIPSTER_EXPORT_BANDS_REFUSED" | string %]</p>
+[% END %]
+[% IF scbandsrestored %]
+<p class="scstatus scsuccess">[% "PLUGIN_MIPSTER_EXPORT_BANDSRESTORED" | string %]</p>
+[% END %]
+
+[%# THE CAUTION. Printed on the page rather than hidden behind a help icon: it is the reason the six %]
+[%# rows below are almost never the right thing to touch.                                            %]
+<div style="padding:4px 0 12px 0;">[% "PLUGIN_MIPSTER_EXPORT_CAUTION" | string %]</div>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_UNRATED" desc="PLUGIN_MIPSTER_EXPORT_UNRATEDDESC" %]
+	<select class="stdedit" name="exportUnrated" id="exportUnrated">
+		[% FOREACH n = [0,1,2,3,4,5] %]
+		<option [% IF prefs.exportUnrated == n %]selected [% END %]value="[% n %]">[% n %]</option>
+		[%- END -%]
+	</select>
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND1" desc="PLUGIN_MIPSTER_EXPORT_BAND1DESC" %]
+	<input type="text" class="stdedit" name="exportBand1" id="exportBand1" value="[% prefs.exportBand1 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND2" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand2" id="exportBand2" value="[% prefs.exportBand2 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND3" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand3" id="exportBand3" value="[% prefs.exportBand3 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND4" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand4" id="exportBand4" value="[% prefs.exportBand4 %]" size="3">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_BAND5" desc="PLUGIN_MIPSTER_EXPORT_BANDDESC" %]
+	<input type="text" class="stdedit" name="exportBand5" id="exportBand5" value="[% prefs.exportBand5 %]" size="3">
+[% END %]
+
+[%# RESTORE DEFAULTS does not go through the validator - the stock scale is valid by definition, and %]
+[%# needing a valid page to get back to a valid page would be a trap.                                %]
+[% WRAPPER setting title="PLUGIN_MIPSTER_EXPORT_RESTORE" desc="PLUGIN_MIPSTER_EXPORT_RESTOREDESC" %]
+	<input class="scexportbtn stdclick" id="screstorebands" name="screstorebands" type="submit" value="[% "PLUGIN_MIPSTER_EXPORT_BANDS_RESTORE" | string %]">
+[% END %]
+
+<hr>
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_TIMEOUT" desc="PLUGIN_MIPSTER_WEB_TIMEOUTDESC" %]
+	<input type="text" class="stdedit sliderInput_30_120_5" name="sqlitetimeout" id="sqlitetimeout" value="[% prefs.sqlitetimeout %]" size="2">
+[% END %]
+
+[% WRAPPER setting title="PLUGIN_MIPSTER_WEB_MAIN_DELAY" desc="PLUGIN_MIPSTER_WEB_MAIN_DELAYDESC" %]
+	<input type="text" class="stdedit sliderInput_1_30_1" name="mipDelay" id="mipDelay" value="[% prefs.mipDelay %]" size="1">
+[% END %]
+
+<hr>
+
+[%# MIP CUSTOM TAGS. Every row is drawn by the script below, saved rows included, so a saved row and a %]
+[%# row added by a click are one copy of the markup (the Power Search rule). Each field appears once.  %]
+[%# The rows post as customtag0, customtag1 ... in screen order. A row removed here is cleared from    %]
+[%# MusicIP by the next export (Plugin.pm scMIPTagsClear) - there is no separate remove button.        %]
+[% WRAPPER setting title="PLUGIN_MIPSTER_TAGS" desc="PLUGIN_MIPSTER_TAGSDESC" %]
+	<div id="sctag-rows"></div>
+	<a href="javascript:void(0)" id="sctag-add" class="sctag-add" onclick="scTagAdd()">+ [% "PLUGIN_MIPSTER_TAGS_ADD" | string %]</a>
+[% END %]
+
+[% PROCESS settings/footer.html %]
+
+<script type="text/javascript">
+(function () {
+	var FIELDS = [
+[% FOREACH f IN tagfields %]		{ id:"[% f.id %]", label:"[% f.label | html %]" }[% UNLESS loop.last %],[% END %]
+[% END %]	];
+	var CHOSEN = [[% FOREACH c IN tagchosen %]"[% c %]"[% UNLESS loop.last %],[% END %][% END %]];
+	var REMOVE = "[% "PLUGIN_MIPSTER_TAGS_REMOVE_ROW" | string | html %]";
+
+	function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+	function rows() { return document.getElementById('sctag-rows').getElementsByClassName('sctag-row'); }
+	function used(except) {
+		var u = {}, r = rows();
+		for (var i = 0; i < r.length; i++) {
+			var s = r[i].getElementsByTagName('select')[0];
+			if (s !== except) u[s.value] = 1;
+		}
+		return u;
+	}
+
+	/* After any change: names and recipe lines follow the field, a field taken by one row is greyed in
+	   the others, rows are numbered in screen order, and Add line goes when every field has a row. */
+	function refresh() {
+		var r = rows();
+		for (var i = 0; i < r.length; i++) {
+			var s = r[i].getElementsByTagName('select')[0];
+			var u = used(s);
+			for (var j = 0; j < s.options.length; j++) s.options[j].disabled = !!u[s.options[j].value];
+			s.name = 'customtag' + i;
+			var key = 'mip' + s.value;
+			r[i].getElementsByClassName('sctag-name')[0].textContent = key;
+			r[i].getElementsByClassName('sctag-line')[0].value =
+				'overlap(seed field "' + key + '", field "' + key + '") > 0';
+		}
+		document.getElementById('sctag-add').style.display = (r.length >= FIELDS.length) ? 'none' : '';
+	}
+
+	function draw(fieldId) {
+		var row = el('div', 'sctag-row');
+		var s = el('select', 'stdedit');
+		for (var i = 0; i < FIELDS.length; i++) {
+			var o = document.createElement('option');
+			o.value = FIELDS[i].id; o.text = FIELDS[i].label;
+			s.appendChild(o);
+		}
+		s.value = fieldId;
+		s.onchange = refresh;
+		var name = el('span', 'sctag-name');
+		var line = el('input', 'stdedit sctag-line');
+		line.type = 'text'; line.readOnly = true;
+		line.onclick = function () { this.select(); };
+		var del = el('button', 'sctag-del');
+		del.type = 'button'; del.title = REMOVE; del.setAttribute('aria-label', REMOVE);
+		del.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+			+ '<path d="M18.3 5.71L12 12.01l-6.3-6.3-1.4 1.4 6.3 6.3-6.3 6.3 1.4 1.4 6.3-6.3 6.3 6.3 1.4-1.4-6.3-6.3 6.3-6.3z"/></svg>';
+		del.onclick = function () { row.parentNode.removeChild(row); refresh(); };
+		row.appendChild(s); row.appendChild(name); row.appendChild(line); row.appendChild(del);
+		document.getElementById('sctag-rows').appendChild(row);
+	}
+
+	window.scTagAdd = function () {
+		var u = used(null);
+		for (var i = 0; i < FIELDS.length; i++) {
+			if (!u[FIELDS[i].id]) { draw(FIELDS[i].id); break; }
+		}
+		refresh();
+	};
+
+	for (var i = 0; i < CHOSEN.length; i++) draw(CHOSEN[i]);
+	refresh();
+})();
+</script>
